@@ -1,122 +1,145 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useMemo, useState } from 'react'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+const mockReports = [
+  { id: 1, name: 'CBC Blood Report', date: 'Feb 24, 2025', status: 'Analyzed', type: 'Blood test', uploadedBy: 'Sunita Sharma' },
+  { id: 2, name: 'Thyroid Test Report', date: 'Feb 18, 2025', status: 'Analyzed', type: 'Lab report', uploadedBy: 'Sunita Sharma' },
+  { id: 3, name: 'Vitamin D Test Report', date: 'Feb 10, 2025', status: 'Analyzed', type: 'Blood test', uploadedBy: 'Sunita Sharma' },
+  { id: 4, name: 'ECG Report', date: 'Feb 05, 2025', status: 'Analyzed', type: 'Cardiology', uploadedBy: 'Sunita Sharma' },
+  { id: 5, name: 'Liver Function Test', date: 'Jan 28, 2025', status: 'Analyzed', type: 'Lab report', uploadedBy: 'Sunita Sharma' },
+  { id: 6, name: 'Lipid Profile', date: 'Jan 20, 2025', status: 'Analyzed', type: 'Blood test', uploadedBy: 'Sunita Sharma' },
+  { id: 7, name: 'X-Ray Chest', date: 'Jan 12, 2025', status: 'Pending', type: 'Imaging', uploadedBy: 'Sunita Sharma' },
+  { id: 8, name: 'Urine Routine Test', date: 'Jan 05, 2025', status: 'Analyzed', type: 'Lab report', uploadedBy: 'Sunita Sharma' },
+]
 
+const navigation = ['Overview', 'Medical Reports', 'Prescriptions', 'Timeline', 'AI Health', 'Reminders', 'Emergency Card', 'Settings']
+const familyMembers = [
+  ['Sunita', 'Mother', 'S'],
+  ['Rajesh', 'Father', 'R'],
+  ['Ananya', 'Daughter', 'A'],
+  ['Arjun', 'Son', 'A'],
+  ['Kamla', 'Dadi', 'K'],
+]
+
+function Icon({ name, size = 18 }) {
+  const paths = {
+    arrow: <path d="m14 6-6 6 6 6M8 12h12" />,
+    home: <><path d="m3 10 9-7 9 7v10H3z" /><path d="M9 20v-6h6v6" /></>,
+    report: <><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v5h5M9 13h6M9 17h6" /></>,
+    pill: <><path d="m9 5 10 10a4 4 0 0 1-6 6L3 11a4 4 0 0 1 6-6Z" /><path d="m6 8 10 10" /></>,
+    timeline: <><circle cx="6" cy="6" r="2" /><circle cx="18" cy="18" r="2" /><path d="M8 6h8v10" /></>,
+    spark: <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />,
+    bell: <><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path d="M10 21h4" /></>,
+    card: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h3" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2h-3v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-2.1-2.1.1-.1A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.5-1H5.3v-3h.2A1.7 1.7 0 0 0 7 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.1-2.1.1.1A1.7 1.7 0 0 0 10.7 6a1.7 1.7 0 0 0 1-1.5v-.2h3v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.1 2.1-.1.1A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.5 1h.2v3h-.2a1.7 1.7 0 0 0-1.5 1Z" /></>,
+    search: <><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></>,
+    filter: <path d="M4 6h16M7 12h10m-7 6h4" />,
+    sort: <><path d="M8 6v12M5 9l3-3 3 3M16 18V6m-3 9 3 3 3-3" /></>,
+    upload: <><path d="M12 16V4m-4 4 4-4 4 4" /><path d="M5 14v5h14v-5" /></>,
+    more: <><circle cx="5" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="19" cy="12" r="1" fill="currentColor" /></>,
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+    check: <path d="m5 12 4 4L19 6" />,
+    document: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></>,
+    chart: <><path d="M4 19V5M4 19h16" /><path d="m7 15 3-4 3 2 5-6" /></>,
+  }
+
+  return <svg className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
+}
+
+function EmptyState() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <div className="empty-state">
+      <div className="empty-icon"><Icon name="document" size={25} /></div>
+      <h3>No Medical Reports Yet</h3>
+      <p>Upload your first medical report to get started.</p>
+    </div>
   )
+}
+
+function ReportPreview() {
+  return (
+    <div className="report-preview">
+      <div className="preview-brand"><span className="preview-mark">+</span><div><strong>WellSpring Diagnostics</strong><small>Trusted care, clear results</small></div></div>
+      <div className="preview-heading"><div><p>Complete Blood Count</p><h3>Laboratory Test Report</h3></div><span>Final report</span></div>
+      <div className="preview-patient"><div><small>Patient name</small><strong>Sunita Sharma</strong></div><div><small>Age / Gender</small><strong>48 years / Female</strong></div><div><small>Collected on</small><strong>24 Feb 2025</strong></div></div>
+      <table><thead><tr><th>Test</th><th>Result</th><th>Reference range</th></tr></thead><tbody><tr><td>Haemoglobin</td><td>12.8 g/dL</td><td>12.0 – 15.5</td></tr><tr><td>White blood cells</td><td>7.2 × 10⁹/L</td><td>4.0 – 11.0</td></tr><tr><td>Platelet count</td><td>256 × 10⁹/L</td><td>150 – 450</td></tr><tr><td>Red blood cells</td><td>4.5 × 10¹²/L</td><td>3.8 – 5.2</td></tr></tbody></table>
+      <p className="preview-note">Results should be interpreted by a qualified healthcare professional alongside your medical history.</p>
+    </div>
+  )
+}
+
+function AiSummary() {
+  return <div className="ai-summary"><div className="summary-header"><span className="summary-icon"><Icon name="spark" /></span><div><p>AI Health Summary</p><h3>Everything looks within range</h3></div></div><p>Your CBC report shows values within the laboratory’s provided reference ranges. This is an informational summary of the report and not a diagnosis.</p><div className="summary-grid"><div><small>Haemoglobin</small><strong>Normal</strong><span>12.8 g/dL</span></div><div><small>White blood cells</small><strong>Normal</strong><span>7.2 × 10⁹/L</span></div><div><small>Platelets</small><strong>Normal</strong><span>256 × 10⁹/L</span></div></div><div className="summary-tip"><strong>Helpful next step</strong><span>Continue routine check-ups and discuss any symptoms or concerns with your doctor.</span></div></div>
+}
+
+function ChartView() {
+  return <div className="chart-view"><div><p>Haemoglobin trend</p><h3>Recent test history</h3></div><svg viewBox="0 0 520 180" role="img" aria-label="Mock haemoglobin trend chart"><path className="chart-grid" d="M35 25H500M35 80H500M35 135H500M35 150H500" /><path className="chart-line" d="M48 120 C110 100 130 110 175 88 S255 106 300 77 S390 62 465 45" /><circle cx="48" cy="120" r="4" /><circle cx="175" cy="88" r="4" /><circle cx="300" cy="77" r="4" /><circle cx="465" cy="45" r="4" /><text x="40" y="172">May 2024</text><text x="157" y="172">Oct 2024</text><text x="280" y="172">Jan 2025</text><text x="438" y="172">Feb 2025</text></svg><p className="chart-caption">Mock chart based on report history. It is for informational viewing only.</p></div>
+}
+
+function UploadModal({ onClose, onUploaded }) {
+  const [file, setFile] = useState(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [status, setStatus] = useState('idle')
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ title: '', recordType: '', category: '', date: '', description: '' })
+
+  function setChosenFile(nextFile) {
+    if (!nextFile) return
+    const extension = nextFile.name.split('.').pop()?.toLowerCase()
+    if (!['pdf', 'jpg', 'jpeg', 'png'].includes(extension)) {
+      setFile(null)
+      setError('Please choose a PDF, JPG, JPEG, or PNG file.')
+      setStatus('error')
+      return
+    }
+    setFile(nextFile)
+    setError('')
+    setStatus('selected')
+    setForm((current) => ({ ...current, title: current.title || nextFile.name.replace(/\.[^/.]+$/, '') }))
+  }
+
+  function handleDrop(event) {
+    event.preventDefault()
+    setIsDragging(false)
+    setChosenFile(event.dataTransfer.files?.[0])
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    if (!file || !form.title.trim()) {
+      setError(!file ? 'Choose a report before uploading.' : 'Add a report title before uploading.')
+      setStatus('error')
+      return
+    }
+    setStatus('uploading')
+    window.setTimeout(() => {
+      onUploaded({ name: form.title.trim(), date: form.date || 'Today', status: 'Pending', type: form.recordType || 'Medical report', uploadedBy: 'Sunita Sharma' })
+      setStatus('success')
+    }, 850)
+  }
+
+  return <div className="modal-backdrop" role="presentation"><section className="upload-modal" role="dialog" aria-modal="true" aria-labelledby="upload-title"><button className="icon-button modal-close" onClick={onClose} aria-label="Close upload panel"><Icon name="close" /></button><p className="eyebrow">Medical reports</p><h2 id="upload-title">Upload Report</h2><p className="modal-intro">Add a report for Sunita. This demo keeps the file only in your browser session.</p>{status === 'success' ? <div className="upload-success"><span><Icon name="check" size={26} /></span><h3>Report ready to review</h3><p>Your mock report has been added to the list. No file was uploaded to storage.</p><button className="primary-button" onClick={onClose}>Done</button></div> : <form onSubmit={handleSubmit}><label className={`drop-zone ${isDragging ? 'is-dragging' : ''} ${file ? 'has-file' : ''}`} onDragOver={(event) => { event.preventDefault(); setIsDragging(true) }} onDragLeave={() => setIsDragging(false)} onDrop={handleDrop}><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setChosenFile(event.target.files?.[0])} /><span className="drop-icon"><Icon name="upload" /></span>{file ? <span className="selected-file"><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(2)} MB · Ready to upload</small></span> : <span><strong>Drag & drop your report here</strong><small>or browse files from your device</small></span>}<span className="browse-button">Browse files</span></label><p className="format-note">Supported formats: PDF, JPG, JPEG, PNG</p>{error && <p className="form-error">{error}</p>}<label>Report title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="e.g. Annual blood test" /></label><div className="modal-form-grid"><label>Record type<select value={form.recordType} onChange={(event) => setForm({ ...form, recordType: event.target.value })}><option value="">Select type</option><option>Lab Report</option><option>Imaging Report</option><option>Prescription</option><option>Consultation</option><option>Other</option></select></label><label>Category<input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} placeholder="e.g. Blood work" /></label></div><label>Record date<input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} /></label><label>Description <span className="optional">Optional</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows="3" placeholder="Add a short note about this report" /></label><div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" type="submit" disabled={status === 'uploading'}>{status === 'uploading' ? 'Uploading…' : 'Upload report'}</button></div></form>}</section></div>
+}
+
+function App() {
+  const [reports, setReports] = useState(mockReports)
+  const [selectedReportId, setSelectedReportId] = useState(1)
+  const [activeTab, setActiveTab] = useState('Report')
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('All')
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const selectedReport = reports.find((report) => report.id === selectedReportId)
+  const visibleReports = useMemo(() => reports.filter((report) => report.name.toLowerCase().includes(search.toLowerCase()) && (filter === 'All' || report.status === filter)), [filter, reports, search])
+
+  function addMockReport(report) {
+    const newReport = { ...report, id: Date.now() }
+    setReports((current) => [newReport, ...current])
+    setSelectedReportId(newReport.id)
+    setActiveTab('Report')
+  }
+
+  return <div className="app-shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">+</span><span>Health<span>Hub</span></span></div><nav className="main-nav" aria-label="Primary navigation">{navigation.map((item) => <button className={item === 'Medical Reports' ? 'active' : ''} key={item}><Icon name={{ Overview: 'home', 'Medical Reports': 'report', Prescriptions: 'pill', Timeline: 'timeline', 'AI Health': 'spark', Reminders: 'bell', 'Emergency Card': 'card', Settings: 'settings' }[item]} />{item}</button>)}</nav><div className="members"><p>Family Members</p>{familyMembers.map(([name, relation, initial]) => <button key={name} className={`member ${name === 'Sunita' ? 'selected' : ''}`}><span className="avatar">{initial}</span><span><strong>{name}</strong><small>{relation}</small></span>{name === 'Sunita' && <span className="member-check"><Icon name="check" size={13} /></span>}</button>)}</div><div className="sidebar-profile"><span className="avatar avatar--profile">AS</span><span><strong>Avinandan</strong><small>Family admin</small></span><Icon name="more" /></div></aside><main className="main-content"><header className="top-header"><div className="header-title"><button className="icon-button" aria-label="Go back"><Icon name="arrow" /></button><div><h1>Medical Reports</h1><p>All your medical reports in one place</p></div></div><div className="header-actions"><button className="profile-switch"><span className="avatar">S</span>Switch Profile</button><button className="icon-button notification-button" onClick={() => setIsNotificationsOpen((current) => !current)} aria-label="Notifications"><Icon name="bell" />{isNotificationsOpen && <span className="notification-popover">You&apos;re all caught up.</span>}</button></div></header><section className="toolbar"><label className="search-box"><Icon name="search" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reports" /></label><div className="toolbar-actions"><button className="toolbar-button" onClick={() => setFilter((current) => current === 'All' ? 'Analyzed' : current === 'Analyzed' ? 'Pending' : 'All')}><Icon name="filter" />Filter: {filter}</button><button className="toolbar-button"><Icon name="sort" />Newest</button><button className="primary-button upload-trigger" onClick={() => setIsUploadOpen(true)}><Icon name="upload" />Upload Report</button></div></section><div className="workspace"><section className="reports-column"><div className="reports-heading"><div><p className="eyebrow">Sunita&apos;s records</p><h2>All Reports <span>{visibleReports.length}</span></h2></div><button className="icon-button" aria-label="More report options"><Icon name="more" /></button></div>{visibleReports.length ? <div className="report-list">{visibleReports.map((report) => <button className={`report-item ${selectedReportId === report.id ? 'selected' : ''}`} onClick={() => { setSelectedReportId(report.id); setActiveTab('Report') }} key={report.id}><span className="report-document"><Icon name="document" /></span><span className="report-meta"><strong>{report.name}</strong><small>{report.date}</small></span><span className={`status ${report.status.toLowerCase()}`}>{report.status === 'Analyzed' && <Icon name="check" size={12} />}{report.status}</span><span className="report-more"><Icon name="more" /></span></button>)}</div> : <EmptyState />}</section><section className="detail-panel">{selectedReport ? <><div className="detail-heading"><div><p className="eyebrow">{selectedReport.type}</p><h2>{selectedReport.name}</h2><p>{selectedReport.date} <span>•</span> Uploaded by {selectedReport.uploadedBy}</p></div><button className="icon-button" aria-label="Report actions"><Icon name="more" /></button></div><div className="tabs" role="tablist">{['Report', 'AI Summary', 'Chart View', 'History'].map((tab) => <button key={tab} role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab}</button>)}</div><div className="tab-content">{activeTab === 'Report' && <ReportPreview />}{activeTab === 'AI Summary' && <AiSummary />}{activeTab === 'Chart View' && <ChartView />}{activeTab === 'History' && <div className="history-view"><h3>Report history</h3><div><span>24 Feb 2025</span><p><strong>CBC Blood Report uploaded</strong>Sunita&apos;s report was added to HealthHub.</p></div><div><span>24 Feb 2025</span><p><strong>Analysis completed</strong>A mock informational summary is available.</p></div></div>}</div></> : <EmptyState />}</section></div></main>{isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} onUploaded={addMockReport} />}</div>
 }
 
 export default App
