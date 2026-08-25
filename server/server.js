@@ -97,6 +97,60 @@ ${reportText}
     });
   }
 });
+// -----------------------------
+// AI Health Chatbot
+// -----------------------------
+app.post("/api/ai/chat", async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Message is required.",
+      });
+    }
+
+    const response = await client.responses.create({
+      model:"openai/gpt-oss-20b",
+      input: `
+You are the AI Health Assistant inside Family Health Hub.
+
+Your job is to answer general health-related questions in a simple,
+clear and responsible way.
+
+IMPORTANT SAFETY RULES:
+- Do not diagnose diseases.
+- Do not prescribe medicines.
+- Do not tell users to start, stop, or change medication.
+- Do not replace a doctor or other qualified healthcare professional.
+- Do not make up medical information.
+- If the question requires professional medical evaluation, recommend
+  discussing it with a healthcare professional.
+- If the user describes a possible medical emergency, advise them to
+  seek immediate emergency medical care.
+- Keep answers understandable for a normal person.
+- Do not unnecessarily frighten the user.
+- Explain medical terms when useful.
+
+User's question:
+${message}
+      `,
+    });
+
+    res.json({
+      success: true,
+      response: response.output_text,
+    });
+  } catch (error) {
+    console.error("Groq chatbot error:", error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to get AI response.",
+    });
+  }
+});
 
 const PORT = 5000;
 
