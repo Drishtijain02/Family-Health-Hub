@@ -74,49 +74,84 @@ app.post("/api/ai/report-summary", async (req, res) => {
     const response = await client.responses.create({
       model: MODEL,
       input: `
-You are an AI assistant inside a family health management application.
+You are an AI medical report analysis assistant inside Family Health Hub.
 
-Analyze the following medical report and explain it in simple language for a normal person.
+Analyze the medical report below and return ONLY valid JSON.
 
-IMPORTANT:
-- Do not diagnose the patient.
+IMPORTANT SAFETY RULES:
+- Do not diagnose diseases or medical conditions.
 - Do not prescribe medicines.
-- Do not tell the patient to stop or start medication.
-- Clearly identify values that appear outside the provided reference range.
-- Explain what abnormal values may generally be associated with.
-- Mention when the user should discuss something with their doctor.
-- If the report does not provide a reference range, do not assume one.
-- Be calm and easy to understand.
-- Do not create information that is not present in the report.
+- Do not tell the user to start, stop, or change medication.
+- Do not invent information.
+- Only use information present in the report.
+- If a reference range is provided, use that range.
+- If no reference range is provided, do not assume one.
 - If the report appears to contain OCR errors, mention that the original report should be verified.
+- Keep explanations simple and understandable.
+- Recommendations should only suggest discussing relevant findings with a qualified healthcare professional.
+- Do not provide treatment instructions.
 
-Structure your response as:
+Return exactly this JSON structure:
 
-1. Overall Summary
-2. Normal Findings
-3. Values That May Need Attention
-4. What They Generally Mean
-5. Questions to Discuss With Your Doctor
+{
+  "summary": "A short overall explanation of the report.",
+  "parameters": [
+    {
+      "name": "Test name",
+      "value": "Result",
+      "unit": "Unit if available",
+      "reference_range": "Reference range if provided",
+      "status": "normal / abnormal / unclear"
+    }
+  ],
+  "abnormal_parameters": [
+    {
+      "name": "Test name",
+      "value": "Result",
+      "reference_range": "Reference range if provided",
+      "reason": "Why this appears outside the provided range."
+    }
+  ],
+  "explanation": [
+    "Simple explanation of important findings."
+  ],
+  "recommendations": [
+    "Things the patient may discuss with their doctor."
+  ]
+}
 
 Medical Report:
 ${reportText}
       `,
     });
 
+    let analysis;
+
+    try {
+      analysis = JSON.parse(response.output_text);
+    } catch (parseError) {
+      console.error("AI JSON parsing error:", parseError);
+      console.error("Raw AI response:", response.output_text);
+
+      return res.status(500).json({
+        success: false,
+        error: "AI returned an invalid analysis format. Please try again.",
+      });
+    }
+
     res.json({
       success: true,
-      summary: response.output_text,
+      analysis,
     });
   } catch (error) {
     console.error("Groq report analysis error:", error);
 
     res.status(500).json({
       success: false,
-      error: "Unable to generate the report summary. Please try again.",
+      error: "Unable to generate the report analysis. Please try again.",
     });
   }
 });
-
 // -----------------------------
 // AI Health Chatbot
 // -----------------------------

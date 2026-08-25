@@ -2,7 +2,7 @@ import { useState } from "react";
 
 function ReportAISummary() {
   const [reportText, setReportText] = useState("");
-  const [summary, setSummary] = useState("");
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -14,7 +14,7 @@ function ReportAISummary() {
 
     setLoading(true);
     setError("");
-    setSummary("");
+    setAnalysis(null);
 
     try {
       const response = await fetch(
@@ -32,11 +32,11 @@ function ReportAISummary() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate summary");
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to generate analysis");
       }
 
-      setSummary(data.summary);
+      setAnalysis(data.analysis);
     } catch (err) {
       console.error(err);
       setError(err.message || "Something went wrong.");
@@ -47,11 +47,11 @@ function ReportAISummary() {
 
   return (
     <div>
-      <h2>AI Report Summary</h2>
+      <h2>AI Report Analysis</h2>
 
       <p>
-        Enter the details from your medical report to get a simple,
-        easy-to-understand explanation.
+        Enter the details from your medical report to get a
+        simple, easy-to-understand explanation.
       </p>
 
       <textarea
@@ -64,7 +64,7 @@ function ReportAISummary() {
       <br />
 
       <button onClick={generateSummary} disabled={loading}>
-        {loading ? "Analyzing..." : "Generate AI Summary"}
+        {loading ? "Analyzing..." : "Generate AI Analysis"}
       </button>
 
       {error && (
@@ -73,15 +73,94 @@ function ReportAISummary() {
         </p>
       )}
 
-      {summary && (
+      {analysis && (
         <div>
-          <h3>AI Summary</h3>
-          <p>{summary}</p>
+          <h3>Overall Summary</h3>
+          <p>{analysis.summary}</p>
+
+          {analysis.parameters?.length > 0 && (
+            <div>
+              <h3>Report Parameters</h3>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Unit</th>
+                    <th>Reference Range</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {analysis.parameters.map((parameter, index) => (
+                    <tr key={index}>
+                      <td>{parameter.name}</td>
+                      <td>{parameter.value}</td>
+                      <td>{parameter.unit || "-"}</td>
+                      <td>{parameter.reference_range || "-"}</td>
+                      <td>{parameter.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {analysis.abnormal_parameters?.length > 0 && (
+            <div>
+              <h3>Values That May Need Attention</h3>
+
+              {analysis.abnormal_parameters.map((item, index) => (
+                <div key={index}>
+                  <strong>{item.name}</strong>
+
+                  <p>
+                    Value: {item.value}
+                  </p>
+
+                  <p>
+                    Reference Range:{" "}
+                    {item.reference_range || "Not provided"}
+                  </p>
+
+                  <p>
+                    {item.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {analysis.explanation?.length > 0 && (
+            <div>
+              <h3>What It Generally Means</h3>
+
+              <ul>
+                {analysis.explanation.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {analysis.recommendations?.length > 0 && (
+            <div>
+              <h3>Questions / Recommendations</h3>
+
+              <ul>
+                {analysis.recommendations.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <small>
-            This AI-generated summary is for informational purposes only and
-            is not a medical diagnosis. Please consult a qualified doctor for
-            medical advice.
+            This AI-generated analysis is for informational purposes only
+            and is not a medical diagnosis. Please consult a qualified
+            healthcare professional for medical advice.
           </small>
         </div>
       )}
