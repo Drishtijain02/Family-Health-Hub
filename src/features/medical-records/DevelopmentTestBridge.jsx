@@ -38,6 +38,31 @@ export default function DevelopmentTestBridge({ onMemberChange }) {
       onMemberChange(TEST_FAMILY_MEMBER)
       setError('')
       setStatus('signed-in')
+
+      // TEMPORARY DEVELOPMENT DIAGNOSTIC - Remove after RLS debugging
+      if (import.meta.env.DEV) {
+        console.group('🔍 RLS Diagnostic - Medical Records Upload')
+        console.log('TEST_AUTH_USER_ID:', TEST_AUTH_USER_ID)
+        console.log('TEST_FAMILY_MEMBER.id:', TEST_FAMILY_MEMBER.id)
+
+        supabase.auth.getUser().then(({ data, error }) => {
+          console.log('supabase.auth.getUser():', {
+            userId: data?.user?.id,
+            email: data?.user?.email,
+            error
+          })
+        })
+
+        supabase.rpc('get_my_family_ids').then(({ data, error }) => {
+          console.log('supabase.rpc(\'get_my_family_ids\'):', { data, error })
+        })
+
+        supabase.rpc('get_my_family_member_ids').then(({ data, error }) => {
+          console.log('supabase.rpc(\'get_my_family_member_ids\'):', { data, error })
+        })
+
+        console.groupEnd()
+      }
     }
 
     let active = true

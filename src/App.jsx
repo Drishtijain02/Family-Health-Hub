@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import DevelopmentTestBridge from './features/medical-records/DevelopmentTestBridge'
 import {
   deleteMedicalRecord,
@@ -6,6 +6,7 @@ import {
   getMedicalRecordSignedUrl,
   uploadMedicalRecord,
 } from './features/medical-records/medicalRecords'
+import { analyzeMedicalReport } from './features/medical-records/analysisService'
 import './App.css'
 
 const mockReports = [
@@ -32,7 +33,23 @@ function Icon({ name, size = 18 }) {
 
 function EmptyState() { return <div className="empty-state"><div className="empty-icon"><Icon name="document" size={25} /></div><h3>No Medical Reports Yet</h3><p>Upload your first medical report to get started.</p></div> }
 function ReportPreview() { return <div className="report-preview"><div className="preview-brand"><span className="preview-mark">+</span><div><strong>WellSpring Diagnostics</strong><small>Trusted care, clear results</small></div></div><div className="preview-heading"><div><p>Complete Blood Count</p><h3>Laboratory Test Report</h3></div><span>Final report</span></div><div className="preview-patient"><div><small>Patient name</small><strong>Sunita Sharma</strong></div><div><small>Age / Gender</small><strong>48 years / Female</strong></div><div><small>Collected on</small><strong>24 Feb 2025</strong></div></div><table><thead><tr><th>Test</th><th>Result</th><th>Reference range</th></tr></thead><tbody><tr><td>Haemoglobin</td><td>12.8 g/dL</td><td>12.0 – 15.5</td></tr><tr><td>White blood cells</td><td>7.2 × 10⁹/L</td><td>4.0 – 11.0</td></tr><tr><td>Platelet count</td><td>256 × 10⁹/L</td><td>150 – 450</td></tr><tr><td>Red blood cells</td><td>4.5 × 10¹²/L</td><td>3.8 – 5.2</td></tr></tbody></table><p className="preview-note">Results should be interpreted by a qualified healthcare professional alongside your medical history.</p></div> }
-function AiSummary() { return <div className="ai-summary"><div className="summary-header"><span className="summary-icon"><Icon name="spark" /></span><div><p>AI Health Summary</p><h3>Everything looks within range</h3></div></div><p>Your CBC report shows values within the laboratory’s provided reference ranges. This is an informational summary of the report and not a diagnosis.</p><div className="summary-grid"><div><small>Haemoglobin</small><strong>Normal</strong><span>12.8 g/dL</span></div><div><small>White blood cells</small><strong>Normal</strong><span>7.2 × 10⁹/L</span></div><div><small>Platelets</small><strong>Normal</strong><span>256 × 10⁹/L</span></div></div><div className="summary-tip"><strong>Helpful next step</strong><span>Continue routine check-ups and discuss any symptoms or concerns with your doctor.</span></div></div> }
+function AiSummary({ report, analysisState, onAnalyze }) {
+  const { status, data, error } = analysisState
+
+  if (status === 'not-analyzed') {
+    return <div className="ai-summary-empty"><div className="summary-icon-large"><Icon name="spark" size={32} /></div><h3>AI Analysis Not Started</h3><p>Analyze this medical report with AI to extract key findings, identify abnormal parameters, and get actionable health insights.</p><button className="primary-button" onClick={() => onAnalyze(report)}><Icon name="spark" />Analyze Report with AI</button><p className="ai-disclaimer">AI-generated summaries are informational only and not a substitute for professional medical advice. Always consult with a qualified healthcare provider.</p></div>
+  }
+
+  if (status === 'analyzing') {
+    return <div className="ai-summary-loading"><div className="loading-spinner" /><h3>Analyzing Report...</h3><p>Processing the medical report with AI. This may take a few moments.</p></div>
+  }
+
+  if (status === 'error') {
+    return <div className="ai-summary-error"><h3>Analysis Failed</h3><p className="error-message">{error || 'Unable to analyze the report. Please try again.'}</p><button className="secondary-button" onClick={() => onAnalyze(report)}>Retry Analysis</button></div>
+  }
+
+  return <div className="ai-summary"><div className="summary-header"><span className="summary-icon"><Icon name="spark" /></span><div><p>AI Health Summary</p><h3>{data.summary}</h3></div></div>{data.abnormal_parameters && data.abnormal_parameters.length > 0 && <div className="abnormal-section"><h4>Flagged Parameters</h4><div className="abnormal-grid">{data.abnormal_parameters.map((param, idx) => <div key={idx} className="abnormal-item"><small>{param.name}</small><strong className={`status-${param.status.toLowerCase()}`}>{param.status}</strong><span>{param.value}</span>{param.reference_range && <span className="ref-range">Ref: {param.reference_range}</span>}</div>)}</div></div>}<div className="explanation-section"><h4>What does this mean?</h4><p>{data.explanation}</p></div>{data.recommendations && data.recommendations.length > 0 && <div className="recommendations-section"><h4>Recommendations</h4><ul>{data.recommendations.map((rec, idx) => <li key={idx}>{rec}</li>)}</ul></div>}<div className="analysis-meta"><small>Analyzed on {new Date(data.analyzed_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</small></div><p className="ai-disclaimer">AI-generated summaries are informational only and not a substitute for professional medical advice. Always consult with a qualified healthcare provider.</p></div>
+}
 function ChartView() { return <div className="chart-view"><div><p>Haemoglobin trend</p><h3>Recent test history</h3></div><svg viewBox="0 0 520 180" role="img" aria-label="Mock haemoglobin trend chart"><path className="chart-grid" d="M35 25H500M35 80H500M35 135H500M35 150H500" /><path className="chart-line" d="M48 120 C110 100 130 110 175 88 S255 106 300 77 S390 62 465 45" /><circle cx="48" cy="120" r="4" /><circle cx="175" cy="88" r="4" /><circle cx="300" cy="77" r="4" /><circle cx="465" cy="45" r="4" /><text x="40" y="172">May 2024</text><text x="157" y="172">Oct 2024</text><text x="280" y="172">Jan 2025</text><text x="438" y="172">Feb 2025</text></svg><p className="chart-caption">Mock chart based on report history. It is for informational viewing only.</p></div> }
 
 function formatRecordDate(value) {
@@ -69,18 +86,98 @@ function App() {
   const [recordsError, setRecordsError] = useState('')
   const [actionError, setActionError] = useState('')
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false)
+  const [reportAnalysis, setReportAnalysis] = useState({})
+  const [reportItemMenuOpen, setReportItemMenuOpen] = useState(null)
   const isRealDataMode = Boolean(developmentMember)
   const selectedReport = reports.find((report) => report.id === selectedReportId)
-  const visibleReports = useMemo(() => reports.filter((report) => report.name.toLowerCase().includes(search.toLowerCase()) && (filter === 'All' || report.status === filter)), [filter, reports, search])
+
+  const getAnalysisState = useCallback((reportId) => {
+    return reportAnalysis[reportId] || { status: 'not-analyzed', data: null, error: null }
+  }, [reportAnalysis])
+
+  const getReportDisplayStatus = useCallback((report) => {
+    const analysisState = getAnalysisState(report.id)
+
+    if (analysisState.status === 'analyzing') {
+      return { label: 'Analyzing', className: 'analyzing' }
+    }
+
+    if (analysisState.status === 'analyzed') {
+      return { label: 'Analyzed', className: 'analyzed' }
+    }
+
+    return {
+      label: report.isRealRecord ? 'Available' : 'Pending',
+      className: report.isRealRecord ? 'available' : 'pending'
+    }
+  }, [getAnalysisState])
+
+  const visibleReports = useMemo(() => {
+    return reports.filter((report) => {
+      const matchesSearch = report.name.toLowerCase().includes(search.toLowerCase())
+      if (!matchesSearch) return false
+
+      if (filter === 'All') return true
+
+      // Filter based on display status (which includes analysis state)
+      const displayStatus = getReportDisplayStatus(report)
+      return displayStatus.label === filter
+    })
+  }, [filter, reports, search, getReportDisplayStatus])
   const loadRealRecords = useCallback(async (member) => { if (!member) return; setIsLoadingRecords(true); setRecordsError(''); try { const data = await fetchMedicalRecords(member.id); const mapped = data.map((record) => mapMedicalRecord(record, member)); setReports(mapped); setSelectedReportId(mapped[0]?.id || null) } catch (loadError) { setReports([]); setSelectedReportId(null); setRecordsError(loadError.message || 'Unable to load medical reports.') } finally { setIsLoadingRecords(false) } }, [])
   const handleDevelopmentMemberChange = useCallback((member) => { setDevelopmentMember(member); if (!member) { setReports(mockReports); setSelectedReportId(1); setRecordsError(''); setActionError(''); return }; void loadRealRecords(member) }, [loadRealRecords])
 
   function addMockReport(report) { const newReport = { ...report, id: Date.now() }; setReports((current) => [newReport, ...current]); setSelectedReportId(newReport.id); setActiveTab('Report') }
   async function handleRealUpload(details) { await uploadMedicalRecord({ familyMemberId: developmentMember.id, ...details }); await loadRealRecords(developmentMember) }
   async function handleOpenReport() { if (!selectedReport?.isRealRecord) return; setActionError(''); try { const signedUrl = await getMedicalRecordSignedUrl(selectedReport.file_url); window.open(signedUrl, '_blank', 'noopener,noreferrer') } catch (openError) { setActionError(openError.message || 'Unable to open this medical report.') } finally { setIsActionMenuOpen(false) } }
-  async function handleDeleteReport() { if (!selectedReport?.isRealRecord || !window.confirm(`Delete “${selectedReport.name}”? This removes the report and its private file.`)) return; setActionError(''); try { await deleteMedicalRecord(selectedReport); setIsActionMenuOpen(false); await loadRealRecords(developmentMember) } catch (deleteError) { setActionError(deleteError.message || 'Unable to delete this medical report.') } }
+  async function handleDeleteReport() { if (!selectedReport?.isRealRecord || !window.confirm(`Delete "${selectedReport.name}"? This removes the report and its private file.`)) return; setActionError(''); try { await deleteMedicalRecord(selectedReport); setIsActionMenuOpen(false); await loadRealRecords(developmentMember) } catch (deleteError) { setActionError(deleteError.message || 'Unable to delete this medical report.') } }
 
-  return <div className="app-shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">+</span><span>Health<span>Hub</span></span></div><nav className="main-nav" aria-label="Primary navigation">{navigation.map((item) => <button className={item === 'Medical Reports' ? 'active' : ''} key={item}><Icon name={{ Overview: 'home', 'Medical Reports': 'report', Prescriptions: 'pill', Timeline: 'timeline', 'AI Health': 'spark', Reminders: 'bell', 'Emergency Card': 'card', Settings: 'settings' }[item]} />{item}</button>)}</nav><div className="members"><p>Family Members</p>{familyMembers.map(([name, relation, initial]) => <button key={name} className={`member ${name === 'Sunita' ? 'selected' : ''}`}><span className="avatar">{initial}</span><span><strong>{name}</strong><small>{relation}</small></span>{name === 'Sunita' && <span className="member-check"><Icon name="check" size={13} /></span>}</button>)}</div><div className="sidebar-profile"><span className="avatar avatar--profile">AS</span><span><strong>Avinandan</strong><small>Family admin</small></span><Icon name="more" /></div></aside><main className="main-content"><header className="top-header"><div className="header-title"><button className="icon-button" aria-label="Go back"><Icon name="arrow" /></button><div><h1>Medical Reports</h1><p>All your medical reports in one place</p></div></div><div className="header-actions"><button className="profile-switch"><span className="avatar">S</span>Switch Profile</button><button className="icon-button notification-button" onClick={() => setIsNotificationsOpen((current) => !current)} aria-label="Notifications"><Icon name="bell" />{isNotificationsOpen && <span className="notification-popover">You&apos;re all caught up.</span>}</button></div></header><DevelopmentTestBridge onMemberChange={handleDevelopmentMemberChange} /><section className="toolbar"><label className="search-box"><Icon name="search" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reports" /></label><div className="toolbar-actions"><button className="toolbar-button" onClick={() => setFilter((current) => current === 'All' ? 'Analyzed' : current === 'Analyzed' ? 'Pending' : 'All')}><Icon name="filter" />Filter: {filter}</button><button className="toolbar-button"><Icon name="sort" />Newest</button><button className="primary-button upload-trigger" onClick={() => setIsUploadOpen(true)}><Icon name="upload" />Upload Report</button></div></section>{isRealDataMode && <p className="real-data-mode">Development/Test mode · showing only real reports for {developmentMember.name}.</p>}{recordsError && <p className="real-data-error" role="alert">{recordsError}</p>}{actionError && <p className="real-data-error" role="alert">{actionError}</p>}<div className="workspace"><section className="reports-column"><div className="reports-heading"><div><p className="eyebrow">{isRealDataMode ? `${developmentMember.name}'s records` : "Sunita's records"}</p><h2>All Reports <span>{isLoadingRecords ? '…' : visibleReports.length}</span></h2></div><button className="icon-button" aria-label="More report options"><Icon name="more" /></button></div>{isLoadingRecords ? <div className="empty-state"><p>Loading medical reports…</p></div> : visibleReports.length ? <div className="report-list">{visibleReports.map((report) => <button className={`report-item ${selectedReportId === report.id ? 'selected' : ''}`} onClick={() => { setSelectedReportId(report.id); setActiveTab('Report'); setIsActionMenuOpen(false) }} key={report.id}><span className="report-document"><Icon name="document" /></span><span className="report-meta"><strong>{report.name}</strong><small>{report.date}</small></span><span className={`status ${report.status.toLowerCase()}`}>{report.status === 'Analyzed' && <Icon name="check" size={12} />}{report.status}</span><span className="report-more"><Icon name="more" /></span></button>)}</div> : <EmptyState />}</section><section className="detail-panel">{selectedReport ? <><div className="detail-heading"><div><p className="eyebrow">{selectedReport.type}</p><h2>{selectedReport.name}</h2><p>{selectedReport.date} <span>•</span> Uploaded by {selectedReport.uploadedBy}</p></div><div className="report-actions-wrap"><button className="icon-button" aria-label="Report actions" onClick={() => selectedReport.isRealRecord && setIsActionMenuOpen((current) => !current)}><Icon name="more" /></button>{selectedReport.isRealRecord && isActionMenuOpen && <div className="report-actions-menu"><button type="button" onClick={handleOpenReport}>Open private report</button><button type="button" onClick={handleDeleteReport}>Delete report</button></div>}</div></div><div className="tabs" role="tablist">{['Report', 'AI Summary', 'Chart View', 'History'].map((tab) => <button key={tab} role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab}</button>)}</div><div className="tab-content">{activeTab === 'Report' && <ReportPreview />}{activeTab === 'AI Summary' && <AiSummary />}{activeTab === 'Chart View' && <ChartView />}{activeTab === 'History' && <div className="history-view"><h3>Report history</h3><div><span>{selectedReport.date}</span><p><strong>{selectedReport.name} uploaded</strong>{selectedReport.uploadedBy}&apos;s report was added to HealthHub.</p></div><div><span>{selectedReport.date}</span><p><strong>{selectedReport.isRealRecord ? 'Secure report available' : 'Analysis completed'}</strong>{selectedReport.isRealRecord ? 'The private report can be opened through a temporary signed link.' : 'A mock informational summary is available.'}</p></div></div>}</div></> : <EmptyState />}</section></div></main>{isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} onUploaded={addMockReport} onUpload={isRealDataMode ? handleRealUpload : undefined} isRealDataMode={isRealDataMode} />}</div>
+  async function handleAnalyzeReport(report) {
+    setReportAnalysis((prev) => ({
+      ...prev,
+      [report.id]: { status: 'analyzing', data: null, error: null }
+    }))
+
+    try {
+      const analysis = await analyzeMedicalReport(report)
+      setReportAnalysis((prev) => ({
+        ...prev,
+        [report.id]: { status: 'analyzed', data: analysis, error: null }
+      }))
+      setActiveTab('AI Summary')
+    } catch (error) {
+      setReportAnalysis((prev) => ({
+        ...prev,
+        [report.id]: { status: 'error', data: null, error: error.message }
+      }))
+    }
+  }
+
+  function handleReportItemMenu(event, reportId) {
+    event.stopPropagation()
+    setReportItemMenuOpen(reportItemMenuOpen === reportId ? null : reportId)
+  }
+
+  function handleCloseReportItemMenu() {
+    setReportItemMenuOpen(null)
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (reportItemMenuOpen === null) return
+
+    function handleClickOutside(event) {
+      const menu = document.querySelector('.report-item-menu')
+      if (menu && !menu.contains(event.target)) {
+        setReportItemMenuOpen(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [reportItemMenuOpen])
+
+  return <div className="app-shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">+</span><span>Health<span>Hub</span></span></div><nav className="main-nav" aria-label="Primary navigation">{navigation.map((item) => <button className={item === 'Medical Reports' ? 'active' : ''} key={item}><Icon name={{ Overview: 'home', 'Medical Reports': 'report', Prescriptions: 'pill', Timeline: 'timeline', 'AI Health': 'spark', Reminders: 'bell', 'Emergency Card': 'card', Settings: 'settings' }[item]} />{item}</button>)}</nav><div className="members"><p>Family Members</p>{familyMembers.map(([name, relation, initial]) => <button key={name} className={`member ${name === 'Sunita' ? 'selected' : ''}`}><span className="avatar">{initial}</span><span><strong>{name}</strong><small>{relation}</small></span>{name === 'Sunita' && <span className="member-check"><Icon name="check" size={13} /></span>}</button>)}</div><div className="sidebar-profile"><span className="avatar avatar--profile">AS</span><span><strong>Avinandan</strong><small>Family admin</small></span><Icon name="more" /></div></aside><main className="main-content"><header className="top-header"><div className="header-title"><button className="icon-button" aria-label="Go back"><Icon name="arrow" /></button><div><h1>Medical Reports</h1><p>All your medical reports in one place</p></div></div><div className="header-actions"><button className="profile-switch"><span className="avatar">S</span>Switch Profile</button><button className="icon-button notification-button" onClick={() => setIsNotificationsOpen((current) => !current)} aria-label="Notifications"><Icon name="bell" />{isNotificationsOpen && <span className="notification-popover">You&apos;re all caught up.</span>}</button></div></header><DevelopmentTestBridge onMemberChange={handleDevelopmentMemberChange} /><section className="toolbar"><label className="search-box"><Icon name="search" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reports" /></label><div className="toolbar-actions"><button className="toolbar-button" onClick={() => setFilter((current) => current === 'All' ? 'Analyzed' : current === 'Analyzed' ? 'Pending' : 'All')}><Icon name="filter" />Filter: {filter}</button><button className="toolbar-button"><Icon name="sort" />Newest</button><button className="primary-button upload-trigger" onClick={() => setIsUploadOpen(true)}><Icon name="upload" />Upload Report</button></div></section>{isRealDataMode && <p className="real-data-mode">Development/Test mode · showing only real reports for {developmentMember.name}.</p>}{recordsError && <p className="real-data-error" role="alert">{recordsError}</p>}{actionError && <p className="real-data-error" role="alert">{actionError}</p>}<div className="workspace"><section className="reports-column"><div className="reports-heading"><div><p className="eyebrow">{isRealDataMode ? `${developmentMember.name}'s records` : "Sunita's records"}</p><h2>All Reports <span>{isLoadingRecords ? '…' : visibleReports.length}</span></h2></div></div>{isLoadingRecords ? <div className="empty-state"><p>Loading medical reports…</p></div> : visibleReports.length ? <div className="report-list">{visibleReports.map((report) => { const displayStatus = getReportDisplayStatus(report); return <div className="report-item-wrapper" key={report.id}><button className={`report-item ${selectedReportId === report.id ? 'selected' : ''}`} onClick={() => { setSelectedReportId(report.id); if (!selectedReportId) setActiveTab('Report'); setIsActionMenuOpen(false); setReportItemMenuOpen(null) }}><span className="report-document"><Icon name="document" /></span><span className="report-meta"><strong>{report.name}</strong><small>{report.date}</small></span><span className={`status ${displayStatus.className}`}>{displayStatus.label === 'Analyzed' && <Icon name="check" size={12} />}{displayStatus.label}</span><span className="report-more" onClick={(e) => handleReportItemMenu(e, report.id)}><Icon name="more" /></span></button>{reportItemMenuOpen === report.id && <div className="report-item-menu" onMouseLeave={handleCloseReportItemMenu}><button type="button" onClick={(e) => { e.stopPropagation(); handleAnalyzeReport(report); setReportItemMenuOpen(null) }}>{getAnalysisState(report.id).status === 'analyzed' ? 'Re-analyze report' : 'Analyze report'}</button>{report.isRealRecord && <button type="button" onClick={(e) => { e.stopPropagation(); setReportItemMenuOpen(null); handleDeleteReport() }}>Delete report</button>}</div>}</div> })}</div> : <EmptyState />}</section><section className="detail-panel">{selectedReport ? <><div className="detail-heading"><div><p className="eyebrow">{selectedReport.type}</p><h2>{selectedReport.name}</h2><p>{selectedReport.date} <span>•</span> Uploaded by {selectedReport.uploadedBy}</p></div><div className="report-actions-wrap"><button className="icon-button" aria-label="Report actions" onClick={() => setIsActionMenuOpen((current) => !current)}><Icon name="more" /></button>{isActionMenuOpen && <div className="report-actions-menu">{selectedReport.isRealRecord && <button type="button" onClick={handleOpenReport}>Open private report</button>}{getAnalysisState(selectedReport.id).status !== 'analyzing' && <button type="button" onClick={() => { handleAnalyzeReport(selectedReport); setIsActionMenuOpen(false) }}>{getAnalysisState(selectedReport.id).status === 'analyzed' ? 'Re-analyze report' : 'Analyze report'}</button>}{selectedReport.isRealRecord && <button type="button" onClick={handleDeleteReport}>Delete report</button>}</div>}</div></div><div className="tabs" role="tablist">{['Report', 'AI Summary', 'Chart View', 'History'].map((tab) => <button key={tab} role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab}</button>)}</div><div className="tab-content">{activeTab === 'Report' && <>{getAnalysisState(selectedReport.id).status === 'not-analyzed' && <div className="analyze-action-bar"><button className="primary-button analyze-trigger" onClick={() => handleAnalyzeReport(selectedReport)}><Icon name="spark" />Analyze Report with AI</button></div>}{getAnalysisState(selectedReport.id).status === 'analyzing' && <div className="analyze-action-bar"><div className="analyze-status analyzing"><span className="analyze-spinner" />Analyzing report with AI...</div></div>}{getAnalysisState(selectedReport.id).status === 'analyzed' && <div className="analyze-action-bar"><div className="analyze-status analyzed"><Icon name="check" />Analysis complete. View in AI Summary tab.</div></div>}<ReportPreview /></>}{activeTab === 'AI Summary' && <AiSummary report={selectedReport} analysisState={getAnalysisState(selectedReport.id)} onAnalyze={handleAnalyzeReport} />}{activeTab === 'Chart View' && <ChartView />}{activeTab === 'History' && <div className="history-view"><h3>Report history</h3><div><span>{selectedReport.date}</span><p><strong>{selectedReport.name} uploaded</strong>{selectedReport.uploadedBy}&apos;s report was added to HealthHub.</p></div><div><span>{selectedReport.date}</span><p><strong>{selectedReport.isRealRecord ? 'Secure report available' : 'Analysis completed'}</strong>{selectedReport.isRealRecord ? 'The private report can be opened through a temporary signed link.' : 'A mock informational summary is available.'}</p></div></div>}</div></> : <EmptyState />}</section></div></main>{isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} onUploaded={addMockReport} onUpload={isRealDataMode ? handleRealUpload : undefined} isRealDataMode={isRealDataMode} />}</div>
 }
 
 export default App
