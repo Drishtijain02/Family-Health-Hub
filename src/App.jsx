@@ -1,82 +1,141 @@
-import AIChatbot from "./components/AIChatbot";
-import AIHealthSummary from "./components/AIHealthSummary";
-import ReportAISummary from "./components/ReportAISummary";
+import { useEffect, useState } from "react";
 import "./App.css";
 
+import Login from "./components/Login";
+import CreateFamily from "./components/CreateFamily";
+
+import { supabase } from "./lib/supabase";
+
 function App() {
-  return (
-    <div className="ai-demo-page">
+  const [user, setUser] = useState(null);
+  const [showCreateFamily, setShowCreateFamily] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-      {/* Header */}
-      <header className="ai-demo-header">
-        <div>
-          <div className="brand-small">FAMILY HEALTH HUB</div>
-          <h1>AI Health Center</h1>
-          <p>Smart health insights powered by AI</p>
+  /* --------------------------------------------------
+     Check existing Supabase session
+     -------------------------------------------------- */
+
+  useEffect(() => {
+    const getSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        setUser(session.user);
+      }
+
+      setCheckingSession(false);
+    };
+
+    getSession();
+
+    /* Listen for login/logout changes */
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  /* --------------------------------------------------
+     Loading
+     -------------------------------------------------- */
+
+  if (checkingSession) {
+    return (
+      <div className="healthhub-loading">
+        <div className="healthhub-loading-logo">
+          H
         </div>
 
-        <div className="ai-status">
-          <span className="status-dot"></span>
-          AI Online
-        </div>
-      </header>
+        <h2>HealthHub</h2>
 
-      {/* Intro */}
-      <div className="demo-intro">
-        <span>✦ AI FEATURES</span>
-        <h2>Your Health, Simplified.</h2>
-        <p>
-          Explore AI-powered health assistance, medical report analysis,
-          and personalized health summaries.
-        </p>
+        <p>Loading your family health space...</p>
       </div>
+    );
+  }
 
-      {/* AI Health Summary */}
-      <section className="ai-card">
-        <div className="card-heading">
-          <div className="card-icon">♥</div>
-          <div>
-            <h2>AI Health Summary</h2>
-            <p>Quick overview of a family member's health</p>
-          </div>
-          <span className="demo-badge">DEMO</span>
+  /* --------------------------------------------------
+     Create Family
+     -------------------------------------------------- */
+
+  if (showCreateFamily) {
+    return (
+      <CreateFamily
+        onBack={() => setShowCreateFamily(false)}
+      />
+    );
+  }
+
+  /* --------------------------------------------------
+     Login
+     -------------------------------------------------- */
+
+  if (!user) {
+    return (
+      <Login
+        onLogin={(loggedInUser) => {
+          setUser(loggedInUser);
+        }}
+        onCreateFamily={() => {
+          setShowCreateFamily(true);
+        }}
+      />
+    );
+  }
+
+  /* --------------------------------------------------
+     TEMPORARY POST-LOGIN SCREEN
+     
+     Komal's profile-selection/dashboard section
+     will replace this later.
+     -------------------------------------------------- */
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  return (
+    <div className="healthhub-session-page">
+      <div className="healthhub-session-card">
+        <div className="healthhub-session-logo">
+          H
         </div>
 
-        <AIHealthSummary />
-      </section>
+        <h1>Welcome to HealthHub</h1>
 
-      {/* Report Analysis */}
-      <section className="ai-card">
-        <div className="card-heading">
-          <div className="card-icon">▤</div>
-          <div>
-            <h2>AI Medical Report Analysis</h2>
-            <p>Understand medical reports in simple language</p>
-          </div>
-          <span className="demo-badge">AI</span>
+        <p>
+          You're signed in successfully.
+        </p>
+
+        <div className="healthhub-user-box">
+          <span>Signed in as</span>
+
+          <strong>
+            {user.email}
+          </strong>
         </div>
 
-        <ReportAISummary />
-      </section>
-
-      {/* Chatbot */}
-      <section className="ai-card chatbot-card">
-        <div className="card-heading">
-          <div className="card-icon">✦</div>
-          <div>
-            <h2>AI Health Assistant</h2>
-            <p>Ask general health-related questions</p>
-          </div>
-          <span className="demo-badge">AI</span>
+        <div className="healthhub-session-note">
+          Your family profile space will appear here.
         </div>
 
-        <AIChatbot />
-      </section>
-
-      <footer>
-        Family Health Hub • AI features prototype
-      </footer>
-
+        <button
+          className="healthhub-logout"
+          onClick={handleLogout}
+        >
+          Sign Out
+        </button>
+      </div>
     </div>
   );
 }

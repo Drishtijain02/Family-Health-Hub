@@ -1,328 +1,157 @@
-* {
-  box-sizing: border-box;
+/* =========================================================
+   HEALTHHUB AUTH / SESSION SCREENS
+   ========================================================= */
+
+.healthhub-loading,
+.healthhub-session-page {
+  min-height: 100vh;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at 10% 15%,
+      rgba(218, 226, 204, 0.4),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 90% 85%,
+      rgba(224, 232, 214, 0.35),
+      transparent 25%
+    ),
+    #f8f9f6;
 }
 
-body {
+.healthhub-loading {
+  flex-direction: column;
+  gap: 6px;
+}
+
+.healthhub-loading-logo,
+.healthhub-session-logo {
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  background: #718064;
+  color: white;
+
+  font-size: 23px;
+  font-weight: 700;
+}
+
+.healthhub-loading h2 {
+  margin: 10px 0 0;
+
+  color: #30352e;
+
+  font-size: 20px;
+}
+
+.healthhub-loading p {
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  background: #0f1720;
-  color: #e8eef5;
+
+  color: #899086;
+
+  font-size: 12px;
 }
 
-button {
+.healthhub-session-card {
+  width: 90%;
+  max-width: 430px;
+
+  padding: 38px;
+
+  text-align: center;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e5df;
+  border-radius: 18px;
+
+  box-shadow:
+    0 12px 35px rgba(51, 61, 49, 0.08);
+}
+
+.healthhub-session-logo {
+  margin: 0 auto 20px;
+}
+
+.healthhub-session-card h1 {
+  margin: 0;
+
+  color: #30352e;
+
+  font-size: 26px;
+}
+
+.healthhub-session-card > p {
+  margin: 8px 0 24px;
+
+  color: #858d84;
+
+  font-size: 13px;
+}
+
+.healthhub-user-box {
+  padding: 15px;
+
+  border: 1px solid #e4e7e1;
+  border-radius: 10px;
+
+  background: #fafbf9;
+}
+
+.healthhub-user-box span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #929991;
+
+  font-size: 11px;
+}
+
+.healthhub-user-box strong {
+  color: #4b5548;
+
+  font-size: 13px;
+}
+
+.healthhub-session-note {
+  margin: 18px 0;
+
+  color: #858d84;
+
+  font-size: 12px;
+}
+
+.healthhub-logout {
+  width: 100%;
+
+  height: 43px;
+
+  border: 1px solid #d5dbd0;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #657457;
+
+  font-size: 13px;
+  font-weight: 700;
+
   cursor: pointer;
 }
 
-.ai-demo-page {
-  min-height: 100vh;
-  padding: 35px 7%;
-  background:
-    radial-gradient(circle at top right, #183b45 0%, transparent 30%),
-    #0f1720;
-}
-
-/* HEADER */
-
-.ai-demo-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 28px;
-  border-bottom: 1px solid #26343d;
-}
-
-.brand-small {
-  color: #56c7c2;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.ai-demo-header h1 {
-  margin: 6px 0;
-  font-size: 32px;
-  color: #f5f8fb;
-}
-
-.ai-demo-header p {
-  margin: 0;
-  color: #91a1ae;
-}
-
-.ai-status {
-  padding: 9px 15px;
-  border-radius: 20px;
-  background: #142b2d;
-  border: 1px solid #275457;
-  color: #77d8d2;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.status-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 7px;
-  border-radius: 50%;
-  background: #56d6a0;
-}
-
-/* INTRO */
-
-.demo-intro {
-  max-width: 700px;
-  margin: 45px auto 35px;
-  text-align: center;
-}
-
-.demo-intro span {
-  color: #56c7c2;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-}
-
-.demo-intro h2 {
-  margin: 10px 0;
-  font-size: 34px;
-  color: #ffffff;
-}
-
-.demo-intro p {
-  margin: 0;
-  line-height: 1.7;
-  color: #91a1ae;
-}
-
-/* CARDS */
-
-.ai-card {
-  max-width: 1000px;
-  margin: 0 auto 30px;
-  padding: 28px;
-  border: 1px solid #263943;
-  border-radius: 18px;
-  background: rgba(20, 29, 37, 0.92);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
-}
-
-.card-heading {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding-bottom: 20px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #26343d;
-}
-
-.card-heading h2 {
-  margin: 0 0 4px;
-  color: #f5f8fb;
-  font-size: 21px;
-}
-
-.card-heading p {
-  margin: 0;
-  color: #83939f;
-  font-size: 13px;
-}
-
-.card-icon {
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #17373b;
-  color: #63d2cd;
-  font-size: 20px;
-}
-
-.demo-badge {
-  margin-left: auto;
-  padding: 5px 10px;
-  border-radius: 12px;
-  background: #183236;
-  color: #69cbc7;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-/* GENERAL COMPONENT STYLING */
-
-.ai-card textarea {
-  width: 100%;
-  padding: 14px;
-  resize: vertical;
-  border: 1px solid #334650;
-  border-radius: 10px;
-  outline: none;
-  background: #111b23;
-  color: #e8eef5;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.ai-card textarea:focus {
-  border-color: #56c7c2;
-}
-
-.ai-card button {
-  margin-top: 12px;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 9px;
-  background: #4bbdb8;
-  color: #081315;
-  font-weight: 700;
-  transition: 0.2s;
-}
-
-.ai-card button:hover {
-  transform: translateY(-1px);
-  background: #69d3ce;
-}
-
-.ai-card h3 {
-  color: #dce7ee;
-}
-
-.ai-card p {
-  color: #a7b6c1;
-  line-height: 1.7;
-}
-
-/* AI SUMMARY */
-
-.ai-health-summary {
-  padding: 5px;
-}
-
-.ai-summary-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.ai-summary-header h2 {
-  color: #f5f8fb;
-}
-
-.ai-badge {
-  padding: 6px 12px;
-  border-radius: 15px;
-  background: #17373b;
-  color: #63d2cd;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.health-status {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
-  margin: 20px 0;
-  border-radius: 12px;
-  background: #142b2d;
-  border: 1px solid #285255;
-}
-
-.status-icon {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #234b42;
-  color: #70dfb0;
-  font-weight: bold;
-}
-
-.health-status h3 {
-  margin: 3px 0 0;
-  color: #70dfb0;
-}
-
-.health-insights {
-  display: flex;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.insight {
-  flex: 1;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 15px;
-  border-radius: 12px;
-  background: #121d25;
-  border: 1px solid #293b45;
-}
-
-.insight p {
-  margin: 4px 0 0;
-  font-size: 12px;
-}
-
-.insight-icon {
-  font-weight: bold;
-  font-size: 20px;
-}
-
-.normal .insight-icon {
-  color: #70dfb0;
-}
-
-.attention .insight-icon {
-  color: #f0bd69;
-}
-
-/* CHAT */
-
-.chatbot-card {
-  min-height: 300px;
-}
-
-/* FOOTER */
-
-footer {
-  text-align: center;
-  padding: 25px 0 10px;
-  color: #657681;
-  font-size: 12px;
-}
-
-/* MOBILE */
-
-@media (max-width: 700px) {
-  .ai-demo-page {
-    padding: 25px 18px;
-  }
-
-  .ai-demo-header {
-    align-items: flex-start;
-    gap: 15px;
-  }
-
-  .ai-demo-header h1 {
-    font-size: 25px;
-  }
-
-  .demo-intro h2 {
-    font-size: 27px;
-  }
-
-  .ai-card {
-    padding: 20px;
-  }
-
-  .health-insights {
-    flex-direction: column;
-  }
+.healthhub-logout:hover {
+  background: #f1f4ee;
 }
