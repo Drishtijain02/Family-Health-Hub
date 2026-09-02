@@ -1,0 +1,372 @@
+/* =========================================
+   HEALTHHUB - ACCEPT INVITATION
+   Matches the existing light sage/olive theme
+   ========================================= */
+
+.invitation-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+
+  background:
+    radial-gradient(
+      circle at 90% 10%,
+      rgba(116, 132, 101, 0.10),
+      transparent 30%
+    ),
+    #f7f8f4;
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.invitation-card {
+  width: 100%;
+  max-width: 480px;
+
+  padding: 42px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e6dc;
+  border-radius: 20px;
+
+  box-shadow: 0 12px 35px rgba(72, 82, 62, 0.08);
+}
+
+/* ================================
+   BRAND
+   ================================ */
+
+.invitation-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-bottom: 30px;
+}
+
+.invitation-logo {
+  width: 46px;
+  height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background: #748465;
+  color: #ffffff;
+
+  font-size: 21px;
+  font-weight: 700;
+
+  box-shadow: 0 5px 12px rgba(80, 95, 70, 0.12);
+}
+
+.invitation-brand h1 {
+  margin: 0;
+
+  color: #394238;
+
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.invitation-brand p {
+  margin: 3px 0 0;
+
+  color: #8a9382;
+
+  font-size: 12px;
+}
+
+/* ================================
+   INVITATION ICON
+   ================================ */
+
+.invitation-icon {
+  width: 54px;
+  height: 54px;
+
+  margin: 0 auto 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #eef2e9;
+  color: #748465;
+
+  font-size: 23px;
+  font-weight: 700;
+}
+
+/* ================================
+   HEADING
+   ================================ */
+
+.invitation-card h2 {
+  margin: 0;
+
+  text-align: center;
+
+  color: #343c32;
+
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.invitation-subtitle {
+  max-width: 390px;
+
+  margin: 10px auto 26px;
+
+  text-align: center;
+
+  color: #7b8477;
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ================================
+   FAMILY INVITATION INFO
+   ================================ */
+
+.family-invite-box {
+  padding: 18px;
+
+  margin-bottom: 24px;
+
+  background: #f5f7f1;
+
+  border: 1px solid #e1e6d9;
+  border-radius: 13px;
+}
+
+.family-invite-label {
+  margin-bottom: 5px;
+
+  color: #929a8b;
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.family-invite-name {
+  margin-bottom: 15px;
+
+  color: #46513f;
+
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.family-invite-details {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+
+  padding-top: 10px;
+
+  border-top: 1px solid #e3e7de;
+
+  font-size: 12px;
+}
+
+.family-invite-details + .family-invite-details {
+  margin-top: 9px;
+}
+
+.family-invite-details span {
+  color: #8a9384;
+}
+
+.family-invite-details strong {
+  color: #59644f;
+  font-weight: 600;
+
+  text-align: right;
+}
+
+/* ================================
+   FORM
+   ================================ */
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #505a4a;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-group input {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 13px 14px;
+
+  border: 1px solid #d9ded3;
+  border-radius: 10px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #3e4639;
+
+  font-size: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-group input::placeholder {
+  color: #a5aca0;
+}
+
+.form-group input:focus {
+  border-color: #8b9a78;
+
+  box-shadow: 0 0 0 3px rgba(116, 132, 101, 0.10);
+}
+
+/* ================================
+   ERROR
+   ================================ */
+
+.invitation-error {
+  margin: 5px 0 14px;
+
+  color: #c45d55;
+
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ================================
+   ACCEPT BUTTON
+   ================================ */
+
+.accept-invitation-button {
+  width: 100%;
+
+  margin-top: 5px;
+  padding: 13px 16px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #748465;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.accept-invitation-button:hover {
+  background: #657555;
+}
+
+.accept-invitation-button:active {
+  transform: translateY(1px);
+}
+
+.accept-invitation-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ================================
+   SECURITY
+   ================================ */
+
+.invitation-security {
+  margin-top: 20px;
+
+  padding-top: 17px;
+
+  border-top: 1px solid #e8ebe4;
+
+  text-align: center;
+
+  color: #929a8b;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ================================
+   BACK TO LOGIN
+   ================================ */
+
+.invitation-back {
+  display: block;
+
+  margin: 19px auto 0;
+
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #748465;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.invitation-back:hover {
+  color: #59674f;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+
+@media (max-width: 520px) {
+  .invitation-page {
+    padding: 25px 15px;
+  }
+
+  .invitation-card {
+    padding: 30px 24px;
+    border-radius: 17px;
+  }
+
+  .invitation-card h2 {
+    font-size: 25px;
+  }
+
+  .family-invite-details {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .family-invite-details strong {
+    text-align: left;
+  }
+}
