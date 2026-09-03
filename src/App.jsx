@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { supabase } from "./lib/supabase";
+import Login from "./components/Login";
+import CreateFamily from "./components/CreateFamily";
+import AcceptInvitation from "./components/AcceptInvitation";
 
 const avatarOptions = ["👨🏻", "👩🏻", "👦🏻", "👧🏻", "👴🏻", "👵🏻"];
 
@@ -48,20 +51,48 @@ function getAvatarForRelation(relation) {
 }
 
 function App() {
+  const isInvitationRoute = window.location.pathname === "/accept-invitation";
+
+  if (isInvitationRoute) {
+    return (
+      <AcceptInvitation
+        onBack={async () => {
+          await supabase.auth.signOut();
+          window.history.replaceState({}, "", "/");
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
+  return <DashboardApp />;
+}
+
+function DashboardApp() {
   const [user, setUser] = useState(null);
   const [familyId, setFamilyId] = useState(null);
+  const [familyName, setFamilyName] = useState("");
   const [familyMembers, setFamilyMembers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
 
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [membersError, setMembersError] = useState("");
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showCreateFamily, setShowCreateFamily] = useState(false);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
+  const [deletingMember, setDeletingMember] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [newName, setNewName] = useState("");
   const [newRelation, setNewRelation] = useState("");
-  const [newAvatar, setNewAvatar] = useState("👨🏻");
+  const [newRole, setNewRole] = useState("child");
+  const [newEmail, setNewEmail] = useState("");
+  const [newAvatar, setNewAvatar] = useState("");
 
   const [editName, setEditName] = useState("");
   const [editRelation, setEditRelation] = useState("");
@@ -100,9 +131,12 @@ function App() {
         if (mounted) {
           setUser(null);
           setFamilyId(null);
+          setFamilyName("");
           setFamilyMembers([]);
           setSelectedMember(null);
+          setIsAdmin(false);
           setLoadingMembers(false);
+          setAuthLoading(false);
         }
         return;
       }
@@ -112,6 +146,10 @@ function App() {
       }
 
       await loadFamilyMembers(session.user.id);
+
+      if (mounted) {
+        setAuthLoading(false);
+      }
     }
 
     async function handleAuthChange(session) {
@@ -123,10 +161,14 @@ function App() {
         await loadFamilyMembers(session.user.id);
       } else {
         setFamilyId(null);
+        setFamilyName("");
         setFamilyMembers([]);
         setSelectedMember(null);
+        setIsAdmin(false);
         setLoadingMembers(false);
       }
+
+      setAuthLoading(false);
     }
 
     loadSession();
@@ -148,29 +190,72 @@ function App() {
     setMembersError("");
 
     try {
-      const { data: family, error: familyError } = await supabase
+      // Admin/owner: find the family through families.owner_id.
+      const { data: ownedFamily, error: ownedFamilyError } = await supabase
         .from("families")
-        .select("id")
+        .select("id, owner_id, name")
         .eq("owner_id", userId)
         .maybeSingle();
 
-      if (familyError) throw familyError;
+      if (ownedFamilyError) throw ownedFamilyError;
 
-      if (!family) {
+      let resolvedFamilyId = ownedFamily?.id || null;
+      let resolvedIsAdmin = !!ownedFamily;
+
+      // Invited adult: find the family through their family_members.user_id.
+      if (!resolvedFamilyId) {
+        const { data: linkedMember, error: linkedMemberError } =
+          await supabase
+            .from("family_members")
+            .select("id, family_id, role")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+        if (linkedMemberError) throw linkedMemberError;
+
+        if (linkedMember) {
+          resolvedFamilyId = linkedMember.family_id;
+          resolvedIsAdmin = linkedMember.role === "admin";
+        }
+      }
+
+      if (!resolvedFamilyId) {
+        // There is no valid family context. Do not show the old blank
+        // "Your family starts here" screen. Return the user to Login instead.
+        await supabase.auth.signOut();
+        setUser(null);
         setFamilyId(null);
+        setFamilyName("");
         setFamilyMembers([]);
         setSelectedMember(null);
+        setIsAdmin(false);
         return;
       }
 
-      setFamilyId(family.id);
+      let resolvedFamilyName = ownedFamily?.name || "Your Family";
+
+      if (!ownedFamily) {
+        const { data: linkedFamily, error: linkedFamilyError } =
+          await supabase
+            .from("families")
+            .select("id, name")
+            .eq("id", resolvedFamilyId)
+            .maybeSingle();
+
+        if (linkedFamilyError) throw linkedFamilyError;
+        resolvedFamilyName = linkedFamily?.name || "Your Family";
+      }
+
+      setFamilyId(resolvedFamilyId);
+      setFamilyName(resolvedFamilyName);
+      setIsAdmin(resolvedIsAdmin);
 
       const { data: members, error: membersError } = await supabase
         .from("family_members")
         .select(
-          "id, family_id, name, date_of_birth, gender, relation, user_id, created_at"
+          "id, family_id, name, date_of_birth, gender, relation, role, email, avatar, user_id, created_at"
         )
-        .eq("family_id", family.id)
+        .eq("family_id", resolvedFamilyId)
         .order("created_at", { ascending: true });
 
       if (membersError) throw membersError;
@@ -187,9 +272,11 @@ function App() {
           )
           .in("family_member_id", memberIds);
 
-        if (healthError) throw healthError;
-
-        healthInfo = data || [];
+        if (healthError) {
+          console.warn("Health information could not be loaded; family cards will still be shown.", healthError);
+        } else {
+          healthInfo = data || [];
+        }
       }
 
       const healthMap = new Map(
@@ -202,7 +289,7 @@ function App() {
         return {
           ...member,
           relation: member.relation || "Other",
-          avatar: getAvatarForRelation(member.relation),
+          avatar: member.avatar || getAvatarForRelation(member.relation),
           blood: health?.blood_group || "Not added",
           allergy: health?.allergies || "Not added",
           checkup: "Not scheduled",
@@ -234,33 +321,120 @@ function App() {
 
   async function addMember(e) {
     e.preventDefault();
+    if (addingMember) return;
 
     if (!user || !familyId) {
-      setMembersError("Your family could not be found.");
+      setMembersError("We couldn't find your family. Please refresh and try again.");
       return;
     }
 
-    if (!newName.trim() || !newRelation.trim()) return;
+    if (!isAdmin) {
+      setMembersError("Only a family admin can add members.");
+      return;
+    }
+
+    const trimmedName = newName.trim();
+    const trimmedRelation = newRelation.trim();
+    const normalizedEmail = newEmail.trim().toLowerCase();
+
+    if (!trimmedName || !trimmedRelation) {
+      setMembersError("Please enter the member's name and relationship.");
+      return;
+    }
+
+    if (newRole === "adult") {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!normalizedEmail || !emailPattern.test(normalizedEmail)) {
+        setMembersError("Please enter a valid email address for the adult member.");
+        return;
+      }
+    }
+
+    if (!newAvatar) {
+      setMembersError("Please choose an avatar for the family member.");
+      return;
+    }
 
     setMembersError("");
+    setSuccessMessage("");
+    setAddingMember(true);
+
+    let createdMember = null;
 
     try {
-      const { data: member, error } = await supabase
+      // One email can only have one active or pending family profile.
+      if (newRole === "adult") {
+        const { data: existingFamilyMember, error: existingMemberError } =
+          await supabase
+            .from("family_members")
+            .select("id, name, email, user_id")
+            .eq("family_id", familyId)
+            .ilike("email", normalizedEmail)
+            .maybeSingle();
+
+        if (existingMemberError) throw existingMemberError;
+
+        if (existingFamilyMember) {
+          if (existingFamilyMember.user_id) {
+            throw new Error("This email already belongs to an active family member. Ask them to sign in instead.");
+          }
+          throw new Error("An invitation is already pending for this email. Ask the member to check their inbox.");
+        }
+      }
+
+      // Create the visible card first with user_id = null. For an adult this
+      // is only a PENDING card until the invitation is accepted.
+      const { data: member, error: memberError } = await supabase
         .from("family_members")
         .insert({
           family_id: familyId,
-          name: newName.trim(),
-          relation: newRelation.trim(),
+          name: trimmedName,
+          relation: trimmedRelation,
+          role: newRole,
+          email: newRole === "adult" ? normalizedEmail : null,
+          avatar: newAvatar,
           user_id: null,
         })
-        .select()
+        .select("id, family_id, name, date_of_birth, gender, relation, role, email, avatar, user_id, created_at")
         .single();
 
-      if (error) throw error;
+      if (memberError) throw memberError;
+      createdMember = member;
 
-      const newMember = {
+      if (newRole === "adult") {
+        const { data: invitationData, error: invitationError } =
+          await supabase.functions.invoke("invite-family-member", {
+            body: {
+              familyId,
+              familyMemberId: member.id,
+              email: normalizedEmail,
+              name: trimmedName,
+              relation: trimmedRelation,
+            },
+          });
+
+        if (invitationError) {
+          let invitationMessage = invitationError.message;
+          try {
+            const response = invitationError.context;
+            if (response && typeof response.clone === "function") {
+              const payload = await response.clone().json();
+              if (payload?.error) invitationMessage = payload.error;
+            }
+          } catch {
+            // Keep the SDK message if the function response cannot be parsed.
+          }
+          throw new Error(invitationMessage || "We couldn't send the invitation.");
+        }
+
+        if (!invitationData?.success) {
+          throw new Error(invitationData?.error || "We couldn't send the invitation.");
+        }
+      }
+
+      const displayMember = {
         ...member,
-        avatar: newAvatar,
+        avatar: member.avatar || newAvatar,
         blood: "Not added",
         allergy: "Not added",
         checkup: "Not scheduled",
@@ -269,23 +443,105 @@ function App() {
         emergencyContact: "",
       };
 
-      setFamilyMembers((current) => [...current, newMember]);
-      setSelectedMember(newMember);
+      setFamilyMembers((current) => [...current, displayMember]);
+
+      // NEVER open the new member's profile automatically.
+      setSelectedMember(null);
+      setShowProfile(false);
+      setShowAddForm(false);
+      setMembersError("");
 
       setNewName("");
       setNewRelation("");
-      setNewAvatar("👨🏻");
-      setShowAddForm(false);
+      setNewRole("child");
+      setNewEmail("");
+      setNewAvatar("");
+
+      setSuccessMessage(
+        newRole === "adult"
+          ? `${trimmedName} was added. Invitation pending — the profile becomes active after acceptance.`
+          : `${trimmedName} was added to your family.`
+      );
+      window.setTimeout(() => setSuccessMessage(""), 5000);
     } catch (error) {
       console.error("Unable to add family member:", error);
-      setMembersError(
-        error.message || "Unable to add this family member."
+
+      // Roll back the pending card if the invitation could not be completed.
+      if (createdMember?.id) {
+        await supabase
+          .from("family_members")
+          .delete()
+          .eq("id", createdMember.id)
+          .eq("family_id", familyId);
+      }
+
+      setMembersError(error.message || "We couldn't add this family member. Please try again.");
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
+  async function deleteMember(member) {
+    if (!member || !familyId || !isAdmin || deletingMember) return;
+
+    if (member.user_id === user?.id) {
+      setMembersError("You cannot delete your own admin profile.");
+      return;
+    }
+
+    setMemberToDelete(member);
+    setMembersError("");
+  }
+
+  async function confirmDeleteMember() {
+    if (!memberToDelete || !familyId || !isAdmin || deletingMember) return;
+
+    setDeletingMember(true);
+    setMembersError("");
+
+    try {
+      // Remove any pending invitation first. For accepted members this is a no-op.
+      await supabase
+        .from("family_invitations")
+        .delete()
+        .eq("family_member_id", memberToDelete.id)
+        .eq("family_id", familyId);
+
+      const { error } = await supabase
+        .from("family_members")
+        .delete()
+        .eq("id", memberToDelete.id)
+        .eq("family_id", familyId);
+
+      if (error) throw error;
+
+      setFamilyMembers((current) =>
+        current.filter((item) => item.id !== memberToDelete.id)
       );
+
+      if (selectedMember?.id === memberToDelete.id) {
+        setSelectedMember(null);
+      }
+
+      setSuccessMessage(`${memberToDelete.name || "Member"} was removed from the family.`);
+      setMemberToDelete(null);
+    } catch (error) {
+      console.error("Unable to delete family member:", error);
+      setMembersError(
+        error.message || "We couldn't remove this family member."
+      );
+    } finally {
+      setDeletingMember(false);
     }
   }
 
   function openEditForm() {
     if (!selectedMember) return;
+
+    if (!isAdmin && selectedMember.user_id !== user?.id) {
+      setProfileError("You can edit your own profile only.");
+      return;
+    }
 
     setEditName(selectedMember.name || "");
     setEditRelation(selectedMember.relation || "");
@@ -324,8 +580,10 @@ function App() {
         .update({
           name: editName.trim(),
           relation: editRelation.trim(),
+          avatar: editAvatar || getAvatarForRelation(editRelation),
           date_of_birth: editDob || null,
           gender: editGender || null,
+          avatar: editAvatar || getAvatarForRelation(editRelation),
         })
         .eq("id", selectedMember.id)
         .eq("family_id", familyId)
@@ -397,6 +655,73 @@ function App() {
     }
   }
 
+  // CREATE FAMILY
+  if (showCreateFamily) {
+    return (
+      <CreateFamily
+        onBack={async () => {
+          await supabase.auth.signOut();
+          setShowCreateFamily(false);
+          setUser(null);
+          setFamilyId(null);
+          setFamilyName("");
+          setFamilyMembers([]);
+          setSelectedMember(null);
+          setIsAdmin(false);
+          setMembersError("");
+        }}
+        onCreated={async ({ user: createdUser, family, member }) => {
+          setShowCreateFamily(false);
+          setUser(createdUser);
+          setFamilyId(family.id);
+          setFamilyName(family.name || "Your Family");
+          setSelectedMember(null);
+          setMembersError("");
+          setSuccessMessage("Your family is ready. You can now add members from the family page.");
+          setShowAddForm(false);
+
+          // Load the Admin card first. The user can choose Add Member from the family page.
+          await loadFamilyMembers(createdUser.id);
+        }}
+      />
+    );
+  }
+
+  // AUTHENTICATION
+  if (authLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          background: "#f8f9f6",
+          color: "#4b5b50",
+          fontFamily: "inherit",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "32px", marginBottom: "10px" }}>H</div>
+          <strong>Loading HealthHub...</strong>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Login
+        onLogin={async (loggedInUser) => {
+          setUser(loggedInUser);
+          await loadFamilyMembers(loggedInUser.id);
+        }}
+        onCreateFamily={() => {
+          setShowCreateFamily(true);
+        }}
+      />
+    );
+  }
+
   // DASHBOARD
   if (selectedMember) {
   return (
@@ -440,24 +765,33 @@ function App() {
         <div className="sidebar-family">
           <p>FAMILY MEMBERS</p>
 
-          {familyMembers.map((member) => (
+          {familyMembers.map((member) => {
+            const isPending = member.role === "adult" && !member.user_id;
+            return (
             <button
               key={member.id}
               className={`family-mini ${
                 member.id === selectedMember.id ? "current" : ""
-              }`}
+              } ${isPending ? "family-mini-pending" : ""}`}
+              disabled={isPending}
               onClick={() => {
-                setSelectedMember(member);
-                setShowProfile(false);
+                if (!isPending) {
+                  setSelectedMember(member);
+                  setShowProfile(false);
+                }
               }}
             >
               <span>{member.avatar}</span>
               <span>
                 {member.name}
-                <small>{member.relation}</small>
+                <small>
+                  {member.relation}
+                  {member.role === "adult" && !member.user_id ? " • Invitation pending" : ""}
+                </small>
               </span>
             </button>
-          ))}
+            );
+          })}
         </div>
 
       </aside>
@@ -466,17 +800,24 @@ function App() {
       <main className="dashboard-main">
 
         {membersError && (
-          <div
-            role="alert"
-            style={{
-              background: "#fff1f1",
-              color: "#a33",
-              padding: "10px 14px",
-              borderRadius: "10px",
-              marginBottom: "14px",
-            }}
-          >
-            {membersError}
+          <div className="healthhub-alert healthhub-alert-error" role="alert">
+            <div className="healthhub-alert-icon">!</div>
+            <div>
+              <strong>Couldn't complete that action</strong>
+              <p>{membersError}</p>
+            </div>
+            <button type="button" onClick={() => setMembersError("")} aria-label="Dismiss error">×</button>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="healthhub-alert healthhub-alert-success" role="status">
+            <div className="healthhub-alert-icon">✓</div>
+            <div>
+              <strong>Done</strong>
+              <p>{successMessage}</p>
+            </div>
+            <button type="button" onClick={() => setSuccessMessage("")} aria-label="Dismiss message">×</button>
           </div>
         )}
 
@@ -491,7 +832,7 @@ function App() {
             <div>
               <h1>{selectedMember.name}</h1>
               <p>
-                {selectedMember.relation} • Family Health Profile
+                {selectedMember.relation} • {familyName || "Family Health Profile"}
               </p>
             </div>
           </div>
@@ -500,16 +841,43 @@ function App() {
             <button
               className="profile-details-button"
               onClick={openEditForm}
+              disabled={selectedMember.role === "adult" && !selectedMember.user_id}
+              title={selectedMember.role === "adult" && !selectedMember.user_id ? "Available after the invitation is accepted" : "View or edit profile"}
             >
-              View / Edit Profile
+              {selectedMember.role === "adult" && !selectedMember.user_id ? "Profile pending" : "View / Edit Profile"}
             </button>
 
-            <div className="status">
-              ● Health profile active
+            {isAdmin && selectedMember.user_id !== user?.id && (
+              <button
+                type="button"
+                className="delete-member-button"
+                onClick={() => deleteMember(selectedMember)}
+              >
+                Delete Member
+              </button>
+            )}
+
+            <div className={`status ${!selectedMember.user_id && selectedMember.role === "adult" ? "status-pending" : ""}`}>
+              {selectedMember.role === "adult" && !selectedMember.user_id
+                ? "○ Invitation pending"
+                : `● Health profile active${isAdmin && selectedMember.user_id === user?.id ? " • Admin" : ""}`}
             </div>
           </div>
 
         </div>
+
+        {selectedMember.role === "adult" && !selectedMember.user_id && (
+          <div className="pending-profile-panel">
+            <div className="pending-profile-icon">✉</div>
+            <div>
+              <strong>Invitation pending</strong>
+              <p>
+                {selectedMember.email || "This member"} has not accepted the invitation yet.
+                Their health profile will become active after they accept and set their password.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* TOP HEALTH CARDS */}
         <div className="health-cards">
@@ -1136,6 +1504,26 @@ function App() {
                 cursor: not-allowed;
               }
 
+              .delete-member-button {
+                min-height: 42px;
+                padding: 0 16px;
+                border: 1px solid #e7bcbc;
+                border-radius: 10px;
+                background: #fff7f7;
+                color: #a84a4a;
+                font: inherit;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: 0.2s ease;
+              }
+
+              .delete-member-button:hover {
+                background: #fff0f0;
+                border-color: #d99b9b;
+                transform: translateY(-1px);
+              }
+
               @media (max-width: 700px) {
                 .profile-modal-backdrop {
                   align-items: flex-start;
@@ -1196,13 +1584,41 @@ function App() {
           </div>
         </div>
 
-        <button className="switch-account">⇄ Switch Account</button>
+        <button
+          className="switch-account"
+          onClick={async () => {
+            await supabase.auth.signOut();
+            setUser(null);
+            setFamilyId(null);
+            setFamilyName("");
+            setFamilyMembers([]);
+            setSelectedMember(null);
+          }}
+        >
+          ⇄ Switch Account
+        </button>
       </header>
 
       <main className="profile-page">
         <div className="welcome">
           <h1>Who's using HealthHub?</h1>
           <p>Select a profile to continue</p>
+          {familyName && (
+            <div style={{
+              marginTop: "10px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              background: "#edf3ec",
+              color: "#5d7663",
+              fontSize: "13px",
+              fontWeight: 700,
+            }}>
+              🏠 {familyName}
+            </div>
+          )}
         </div>
 
         <div className="profiles">
@@ -1223,28 +1639,74 @@ function App() {
               </button>
             </div>
           ) : familyMembers.length === 0 ? (
-            <div className="family-state">
-              <h3>No family members yet</h3>
-              <p>Add your first family member to create a health profile.</p>
+            <div className="family-state family-empty-compact">
+              <p>No family profiles are available yet.</p>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMembersError("");
+                    setSuccessMessage("");
+                    setSelectedMember(null);
+                    setShowProfile(false);
+                    setNewName("");
+                    setNewRelation("");
+                    setNewRole("child");
+                    setNewEmail("");
+                    setNewAvatar("");
+                    setShowAddForm(true);
+                  }}
+                >
+                  + Add Member
+                </button>
+              )}
             </div>
           ) : (
-            familyMembers.map((member) => (
-              <button
-                className="profile-card"
-                key={member.id}
-                onClick={() => setSelectedMember(member)}
-              >
-                <div className="avatar">{member.avatar}</div>
-                <h3>{member.name}</h3>
-                <p>{member.relation}</p>
-              </button>
-            ))
+            familyMembers.map((member) => {
+              const isPending = member.role === "adult" && !member.user_id;
+
+              return (
+                <button
+                  className={`profile-card ${isPending ? "profile-card-pending" : ""}`}
+                  key={member.id}
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    if (!isPending) setSelectedMember(member);
+                  }}
+                >
+                  <div className="avatar">{member.avatar}</div>
+                  <h3>{member.name}</h3>
+                  <p>{member.relation}{member.role === "admin" ? " • Admin" : ""}</p>
+                  {isPending ? (
+                    <>
+                      <span className="pending-invitation-badge">Invitation pending</span>
+                      <span className="pending-card-note">Waiting for acceptance</span>
+                    </>
+                  ) : (
+                    <span className="active-profile-badge">Active profile</span>
+                  )}
+                </button>
+              );
+            })
           )}
 
           <button
+            type="button"
             className="profile-card add-card"
-            onClick={() => setShowAddForm(true)}
-            disabled={!familyId}
+            onClick={() => {
+              setMembersError("");
+              setSuccessMessage("");
+              setSelectedMember(null);
+              setShowProfile(false);
+              setNewName("");
+              setNewRelation("");
+              setNewRole("child");
+              setNewEmail("");
+              setNewAvatar("");
+              setShowAddForm(true);
+            }}
+            disabled={!familyId || !isAdmin}
           >
             <div className="add-icon">+</div>
             <h3>Add Member</h3>
@@ -1258,13 +1720,34 @@ function App() {
               <button
                 type="button"
                 className="close-form"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  if (!addingMember) {
+                    setShowAddForm(false);
+                    setSelectedMember(null);
+                    setShowProfile(false);
+                    setMembersError("");
+                  }
+                }}
+                disabled={addingMember}
               >
                 ×
               </button>
 
-              <h2>Add Family Member</h2>
-              <p>Create a new family health profile.</p>
+              <div className="add-member-form-heading">
+                <span className="add-member-kicker">FAMILY MANAGEMENT</span>
+                <h2>Add Family Member</h2>
+                <p>{newRole === "adult" ? "An invitation card will appear as Pending. It becomes an active profile only after the member accepts." : "Create a new family health profile managed by the family admin."}</p>
+              </div>
+
+              {membersError && (
+                <div className="add-member-error" role="alert">
+                  <span className="add-member-error-icon">!</span>
+                  <div>
+                    <strong>Couldn't add this member</strong>
+                    <p>{membersError}</p>
+                  </div>
+                </div>
+              )}
 
               <label>Name</label>
               <input
@@ -1281,6 +1764,38 @@ function App() {
                 value={newRelation}
                 onChange={(e) => setNewRelation(e.target.value)}
               />
+
+              <label>Member Type</label>
+              <select
+                value={newRole}
+                onChange={(e) => {
+                  const role = e.target.value;
+                  setNewRole(role);
+                  if (role === "child") {
+                    setNewEmail("");
+                  }
+                }}
+                className="member-type-select"
+              >
+                <option value="child">Child — no login required</option>
+                <option value="adult">Adult — send invitation</option>
+              </select>
+
+              {newRole === "adult" && (
+                <>
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="member@example.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                  <p className="member-email-helper">
+                    An invitation will be sent to this email address.
+                  </p>
+                </>
+              )}
 
               <label>Choose Avatar</label>
 
@@ -1299,12 +1814,456 @@ function App() {
                 ))}
               </div>
 
-              <button type="submit" className="add-member-submit">
-                Add Member
-              </button>
+              <div className="add-member-submit-row">
+                <button
+                  type="button"
+                  className="add-member-cancel"
+                  onClick={() => {
+                    if (!addingMember) {
+                      setShowAddForm(false);
+                      setMembersError("");
+                    }
+                  }}
+                  disabled={addingMember}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="add-member-submit"
+                  disabled={addingMember}
+                >
+                  {addingMember ? (
+                    <span className="submit-loading">
+                      <span className="submit-spinner" /> {newRole === "adult" ? "Sending invitation…" : "Adding member…"}
+                    </span>
+                  ) : newRole === "adult" ? (
+                    "Send Invitation"
+                  ) : (
+                    "Add Member"
+                  )}
+                </button>
+              </div>
             </form>
           </div>
         )}
+
+        {memberToDelete && (
+          <div className="member-delete-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-member-title">
+            <div className="member-delete-modal">
+              <div className="delete-modal-icon">!</div>
+              <h2 id="delete-member-title">Remove {memberToDelete.name || "this member"}?</h2>
+              <p>
+                This will remove their family profile from <strong>{familyName || "your family"}</strong>.
+                {memberToDelete.role === "adult" && !memberToDelete.user_id
+                  ? " Any pending invitation for this profile will also be cancelled."
+                  : ""}
+              </p>
+              <div className="delete-modal-actions">
+                <button
+                  type="button"
+                  className="delete-cancel-button"
+                  onClick={() => setMemberToDelete(null)}
+                  disabled={deletingMember}
+                >
+                  Keep Member
+                </button>
+                <button
+                  type="button"
+                  className="delete-confirm-button"
+                  onClick={confirmDeleteMember}
+                  disabled={deletingMember}
+                >
+                  {deletingMember ? "Removing…" : "Remove Member"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes emptyStateIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+
+          .add-member-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(35, 45, 38, 0.34);
+            backdrop-filter: blur(4px);
+          }
+
+          .add-member-form {
+            position: relative;
+            width: min(520px, 100%);
+            max-height: min(760px, calc(100vh - 48px));
+            overflow-y: auto;
+            padding: 32px 34px 30px;
+            border: 1px solid #e2e7df;
+            border-radius: 22px;
+            background: #fffefc;
+            box-shadow:
+              0 24px 70px rgba(42, 54, 45, 0.18),
+              0 4px 18px rgba(42, 54, 45, 0.08);
+            scrollbar-width: thin;
+            scrollbar-color: #c9d2c5 transparent;
+          }
+
+          .add-member-form::-webkit-scrollbar {
+            width: 7px;
+          }
+
+          .add-member-form::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: #c9d2c5;
+          }
+
+          .add-member-form h2 {
+            margin: 0;
+            padding-right: 38px;
+            color: #2f3d34;
+            font-size: 28px;
+            line-height: 1.15;
+            letter-spacing: -0.5px;
+          }
+
+          .add-member-form > p:not(.member-email-helper) {
+            margin: 8px 0 26px;
+            color: #7c8980;
+            font-size: 14px;
+            line-height: 1.5;
+          }
+
+          .add-member-form > label {
+            display: block;
+            margin: 0 0 8px;
+            color: #536258;
+            font-size: 13px;
+            font-weight: 650;
+          }
+
+          .add-member-form > input,
+          .add-member-form > select {
+            display: block;
+            width: 100%;
+            height: 48px;
+            margin: 0 0 20px;
+            padding: 0 14px;
+            border: 1px solid #dbe1d9;
+            border-radius: 11px;
+            background: #fbfcfa;
+            color: #343c36;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+          }
+
+          .add-member-form > input:focus,
+          .add-member-form > select:focus {
+            border-color: #7d967f;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(103, 130, 108, 0.10);
+          }
+
+          .member-type-select {
+            appearance: auto;
+            cursor: pointer;
+          }
+
+          .member-email-helper {
+            margin: -12px 0 20px;
+            color: #8a958d;
+            font-size: 11px;
+            line-height: 1.4;
+          }
+
+          .avatar-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 2px 0 24px;
+          }
+
+          .avatar-option {
+            width: 58px;
+            height: 58px;
+            flex: 0 0 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 1px solid #dfe5dd;
+            border-radius: 50%;
+            background: #f1f5ed;
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+          }
+
+          .avatar-option:hover {
+            transform: translateY(-2px);
+            border-color: #9caf9d;
+          }
+
+          .avatar-option.avatar-selected {
+            border: 3px solid #63806a;
+            box-shadow: 0 5px 14px rgba(78, 103, 84, 0.12);
+          }
+
+          .add-member-submit {
+            width: 100%;
+            min-height: 48px;
+            border: none;
+            border-radius: 11px;
+            background: #63806a;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .18s ease, transform .14s ease, box-shadow .18s ease;
+          }
+
+          .add-member-submit:hover {
+            background: #56715d;
+            box-shadow: 0 7px 18px rgba(76, 103, 82, 0.16);
+          }
+
+          .add-member-submit:active {
+            transform: translateY(1px);
+          }
+
+          .close-form {
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #7d8981;
+            font-size: 27px;
+            line-height: 1;
+            cursor: pointer;
+          }
+
+          .close-form:hover {
+            background: #eef2ec;
+            color: #526056;
+          }
+
+
+          .pending-profile-panel {
+            display:flex;
+            align-items:flex-start;
+            gap:12px;
+            margin-bottom:16px;
+            padding:15px 17px;
+            border:1px solid #eadfbe;
+            border-radius:15px;
+            background:linear-gradient(135deg,#fffaf0,#fff7e6);
+            color:#70582c;
+          }
+          .pending-profile-icon {
+            width:34px; height:34px; flex:0 0 34px; display:grid; place-items:center;
+            border-radius:50%; background:#f7e7bf; font-size:16px;
+          }
+          .pending-profile-panel strong { display:block; font-size:14px; color:#6c5223; margin-bottom:3px; }
+          .pending-profile-panel p { margin:0; font-size:12px; line-height:1.5; color:#806a3d; }
+
+          .healthhub-alert {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 14px 42px 14px 14px;
+            border-radius: 14px;
+            border: 1px solid;
+            box-shadow: 0 8px 24px rgba(40, 55, 45, 0.06);
+          }
+          .healthhub-alert-icon {
+            width: 28px;
+            height: 28px;
+            flex: 0 0 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            font-weight: 800;
+          }
+          .healthhub-alert strong { display: block; font-size: 14px; margin: 1px 0 3px; }
+          .healthhub-alert p { margin: 0; font-size: 13px; line-height: 1.45; }
+          .healthhub-alert button {
+            position: absolute;
+            top: 9px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: inherit;
+            font-size: 20px;
+            cursor: pointer;
+          }
+          .healthhub-alert-error { background: #fff8f6; border-color: #f0d7cf; color: #74473f; }
+          .healthhub-alert-error .healthhub-alert-icon { background: #f7ddd7; color: #9b4e43; }
+          .healthhub-alert-success { background: #f3f8f2; border-color: #d6e4d3; color: #38513e; }
+          .healthhub-alert-success .healthhub-alert-icon { background: #dcebd9; color: #52735a; }
+          .status-pending { background: #fff8e9 !important; color: #80622d !important; }
+          .pending-card-note {
+            display: block;
+            margin-top: 4px;
+            color: #8a958d;
+            font-size: 10px;
+            font-weight: 600;
+          }
+          .profile-details-button:disabled {
+            opacity: .62;
+            cursor: not-allowed;
+            transform: none !important;
+          }
+          .pending-invitation-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 7px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #fff4d9;
+            border: 1px solid #f0dfb5;
+            color: #7c622f;
+            font-size: 10px;
+            font-weight: 750;
+          }
+          .submit-loading { display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+          .submit-spinner {
+            width: 15px;
+            height: 15px;
+            border: 2px solid rgba(255,255,255,.45);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: healthhubSpin .75s linear infinite;
+          }
+          @keyframes healthhubSpin { to { transform: rotate(360deg); } }
+          .add-member-submit:disabled { opacity: .72; cursor: wait; box-shadow: none; }
+          .close-form:disabled { opacity: .35; cursor: not-allowed; }
+          .member-delete-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            display: grid;
+            place-items: center;
+            padding: 22px;
+            background: rgba(27, 37, 30, .42);
+            backdrop-filter: blur(5px);
+          }
+          .member-delete-modal {
+            width: min(440px, 100%);
+            padding: 30px;
+            border-radius: 22px;
+            background: #fffefc;
+            border: 1px solid #e4e9e1;
+            box-shadow: 0 28px 80px rgba(29, 42, 33, .22);
+            text-align: center;
+          }
+          .delete-modal-icon {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 14px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: #f9e9e5;
+            color: #9b5146;
+            font-weight: 850;
+            font-size: 22px;
+          }
+          .member-delete-modal h2 { margin: 0 0 9px; color: #29382f; font-size: 22px; }
+          .member-delete-modal p { margin: 0 auto; max-width: 350px; color: #748078; font-size: 13px; line-height: 1.6; }
+          .delete-modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+          .delete-modal-actions button {
+            flex: 1;
+            min-height: 46px;
+            border-radius: 11px;
+            font-size: 13px;
+            font-weight: 750;
+            cursor: pointer;
+          }
+          .delete-cancel-button { border: 1px solid #dce3da; background: #f8faf7; color: #526157; }
+          .delete-confirm-button { border: 1px solid #b9675c; background: #a9564b; color: #fff; }
+          .delete-modal-actions button:disabled { opacity: .6; cursor: wait; }
+
+          @media (max-width: 600px) {
+            .add-member-overlay {
+              align-items: flex-end;
+              padding: 0;
+            }
+
+            .add-member-form {
+              width: 100%;
+              max-height: 92vh;
+              padding: 28px 22px 24px;
+              border-radius: 22px 22px 0 0;
+            }
+
+            .add-member-form h2 {
+              font-size: 24px;
+            }
+
+            .avatar-options {
+              gap: 9px;
+            }
+
+            .avatar-option {
+              width: 54px;
+              height: 54px;
+              flex-basis: 54px;
+              font-size: 26px;
+            }
+
+            .delete-modal-actions {
+              flex-direction: column-reverse;
+            }
+          }
+
+
+          .add-member-form-heading { padding-right: 40px; }
+          .add-member-kicker { display:block; margin-bottom:7px; color:#6d8872; font-size:10px; font-weight:800; letter-spacing:1.25px; }
+          .add-member-form-heading p { margin-bottom:22px !important; }
+          .add-member-error { display:flex; gap:11px; align-items:flex-start; margin:-5px 0 20px; padding:13px 14px; border:1px solid #ead0ca; border-radius:13px; background:#fff8f6; color:#7e4740; }
+          .add-member-error-icon { display:grid; place-items:center; flex:0 0 22px; width:22px; height:22px; border-radius:50%; background:#f1d8d2; color:#9a5148; font-size:12px; font-weight:900; }
+          .add-member-error strong { display:block; margin-bottom:3px; color:#75423b; font-size:13px; }
+          .add-member-error p { margin:0 !important; color:#8b625c; font-size:12px; line-height:1.45; }
+          .add-member-submit-row { display:flex; gap:10px; }
+          .add-member-submit-row .add-member-submit, .add-member-cancel { flex:1; }
+          .add-member-cancel { min-height:48px; border:1px solid #dbe2da; border-radius:11px; background:#fff; color:#59665e; font:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+          .add-member-cancel:hover:not(:disabled) { background:#f4f7f3; }
+          .profile-card-pending { cursor:default !important; background:linear-gradient(180deg,#fff 0%,#f7faf6 100%) !important; border-color:#dfe7df !important; }
+          .profile-card-pending:hover { transform:none !important; }
+          .active-profile-badge { display:inline-flex; align-items:center; justify-content:center; min-height:26px; margin-top:8px; padding:0 10px; border-radius:999px; color:#55705b; background:#edf4ee; border:1px solid #dce8de; font-size:10px; font-weight:800; }
+          .add-member-submit:disabled, .add-member-cancel:disabled { opacity:.62; cursor:not-allowed; }
+          .member-delete-overlay { background:rgba(30,42,34,.42) !important; backdrop-filter:blur(5px); }
+          .member-delete-modal { border:1px solid #e5e9e4 !important; border-radius:22px !important; background:#fffefc !important; box-shadow:0 28px 80px rgba(25,38,30,.22) !important; }
+          .delete-modal-icon { background:#f7ece9 !important; color:#a35a51 !important; border-radius:15px !important; }
+          .delete-modal-actions { gap:10px !important; }
+
+          .family-mini-pending { cursor: default !important; opacity: .78; }
+          .family-mini-pending:hover { background: transparent !important; }
+
+          .family-empty-compact { grid-column:1/-1; min-height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#77837b; }
+          .family-empty-compact p { margin:0; }
+          .family-empty-compact button { border:1px solid #d4dfd5; border-radius:10px; background:#edf4ee; color:#58715e; padding:10px 16px; font-weight:750; cursor:pointer; }
+        `}</style>
 
         <div className="security">
           🔒 Your data is safe and encrypted

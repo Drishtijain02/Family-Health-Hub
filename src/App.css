@@ -1645,3 +1645,178 @@ button {
   }
 
 }
+/* =========================================================
+   HEALTHHUB — DELETE MEMBER UI
+   ========================================================= */
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.delete-member-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid #e3c8c3;
+  border-radius: 10px;
+  background: #fff8f6;
+  color: #9a5147;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.15s ease,
+    box-shadow 0.18s ease;
+}
+
+.delete-member-button:hover {
+  background: #fff0ed;
+  border-color: #dba9a1;
+  color: #873f36;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(126, 70, 61, 0.1);
+}
+
+.delete-member-button:active {
+  transform: translateY(0);
+}
+
+/* Delete confirmation modal */
+
+.member-delete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(31, 42, 35, 0.48);
+  backdrop-filter: blur(7px);
+}
+
+.member-delete-modal {
+  width: min(450px, 100%);
+  padding: 32px;
+  border: 1px solid #e4e8e1;
+  border-radius: 22px;
+  background: #fffefc;
+  box-shadow:
+    0 30px 90px rgba(26, 38, 30, 0.24),
+    0 5px 20px rgba(26, 38, 30, 0.08);
+  text-align: center;
+  animation: deleteModalIn 0.18s ease-out;
+}
+
+@keyframes deleteModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.delete-modal-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #fff0ed;
+  color: #a45248;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.member-delete-modal h2 {
+  margin: 0 0 10px;
+  color: #2f3c34;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.member-delete-modal p {
+  margin: 0 auto;
+  max-width: 360px;
+  color: #77837b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.member-delete-modal p strong {
+  color: #59665d;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.delete-modal-actions button {
+  flex: 1;
+  min-height: 46px;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.14s ease;
+}
+
+.delete-cancel-button {
+  border: 1px solid #dbe2d9;
+  background: #f8faf7;
+  color: #536158;
+}
+
+.delete-cancel-button:hover:not(:disabled) {
+  background: #eef3ec;
+  border-color: #cbd5c8;
+}
+
+.delete-confirm-button {
+  border: 1px solid #a9564b;
+  background: #a9564b;
+  color: white;
+}
+
+.delete-confirm-button:hover:not(:disabled) {
+  background: #91483f;
+  border-color: #91483f;
+  transform: translateY(-1px);
+}
+
+.delete-modal-actions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+@media (max-width: 600px) {
+  .profile-actions {
+    justify-content: flex-start;
+  }
+
+  .delete-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .member-delete-modal {
+    padding: 26px 21px;
+  }
+}
