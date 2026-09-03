@@ -42,7 +42,6 @@ import HealthCard from './components/HealthCard';
 import { Pill, CreditCard } from 'lucide-react';
 
 export default function App() {
-  // Navigation State: 'prescriptions' or 'healthCard'
   const [activeTab, setActiveTab] = useState('prescriptions');
 
   return (
@@ -56,10 +55,10 @@ export default function App() {
             <div className="w-8 h-8 rounded-xl bg-[#3b4e34] flex items-center justify-center text-white font-bold text-lg">
               H
             </div>
-            <span className="font-bold text-gray-900 text-lg tracking-tight">HealthDash</span>
+            <span className="font-bold text-gray-900 text-lg tracking-tight">HealthHub</span>
           </div>
 
-          {/* Navigation Buttons */}
+          {/* Tab Navigation Buttons */}
           <nav className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
             <button
               onClick={() => setActiveTab('prescriptions')}
@@ -88,7 +87,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Dynamic View Content */}
+      {/* Main Dynamic View */}
       <main className="py-4">
         {activeTab === 'prescriptions' ? <Prescriptions /> : <HealthCard />}
       </main>
