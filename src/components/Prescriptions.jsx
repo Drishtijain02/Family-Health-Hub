@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 import {
   Upload,
   Search,
@@ -17,6 +18,8 @@ export default function Prescriptions() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // OCR Scanning State
   const [isScanning, setIsScanning] = useState(false);
@@ -37,32 +40,6 @@ export default function Prescriptions() {
     return new Date().toISOString().split('T')[0];
   };
 
-  // Sample Reports
-  const [reports, setReports] = useState([
-    {
-      id: 1,
-      title: 'Vitamin D Test Report',
-      doctor: 'Dr. R. Mehta',
-      category: 'Blood Work',
-      recordType: 'Lab Report',
-      date: '10-02-2026',
-      description: 'Annual routine health checkup report.',
-      status: 'Uploaded',
-      imageUrl: null
-    },
-    {
-      id: 2,
-      title: 'Chest X-Ray Prescription',
-      doctor: 'Not Specified',
-      category: 'Radiology',
-      recordType: 'Prescription',
-      date: '28-01-2026',
-      description: 'Follow-up for seasonal cough.',
-      status: 'Uploaded',
-      imageUrl: null
-    }
-  ]);
-
   const [formData, setFormData] = useState({
     title: '',
     doctor: '',
@@ -74,6 +51,30 @@ export default function Prescriptions() {
     fileName: '',
     imageUrl: ''
   });
+
+  // --- 1. FETCH REPORTS FROM SUPABASE ON MOUNT ---
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const fetchReports = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      // Map database field names (image_url, record_type) to component format
+      const formattedData = data.map((item) => ({
+        ...item,
+        recordType: item.record_type,
+        imageUrl: item.image_url
+      }));
+      setReports(formattedData);
+    }
+    setLoading(false);
+  };
 
   // --- OCR SCANNING & IMAGE URL GENERATION ---
   const triggerOcrScan = (file) => {
@@ -92,7 +93,7 @@ export default function Prescriptions() {
 
           setFormData((prevData) => ({
             ...prevData,
-            title: prevData.title || file.name.replace(/\.[^/.]+$/, ""),
+            title: prevData.title || file.name.replace(/\.[^/.]+$/, ''),
             recordType: 'Prescription',
             category: 'General',
             imageUrl: uploadedImageUrl
@@ -118,31 +119,63 @@ export default function Prescriptions() {
     }
   };
 
-  const handleFormSubmit = (e) => {
+  // --- 2. SUBMIT REPORT & UPLOAD IMAGE TO SUPABASE ---
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
 
-    // Format selected ISO date (YYYY-MM-DD) or current date into DD-MM-YYYY
     let formattedDate = getFormattedTodayDate();
     if (formData.dateIso) {
       const [year, month, day] = formData.dateIso.split('-');
       formattedDate = `${day}-${month}-${year}`;
     }
 
-    const newReport = {
-      id: Date.now(),
+    let publicImageUrl = null;
+
+    // Upload image to Supabase Storage if present
+    if (formData.file) {
+      const fileExt = formData.file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('prescriptions')
+        .upload(fileName, formData.file);
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from('prescriptions')
+          .getPublicUrl(fileName);
+        publicImageUrl = urlData.publicUrl;
+      }
+    }
+
+    const newRecord = {
       title: formData.title || 'Uploaded Prescription',
       doctor: formData.doctor.trim() || 'Not Specified',
       category: formData.category || 'General',
-      recordType: formData.recordType,
+      record_type: formData.recordType,
       date: formattedDate,
       description: formData.description || 'User uploaded prescription photo.',
       status: 'Uploaded',
-      imageUrl: formData.imageUrl || null
+      image_url: publicImageUrl
     };
 
-    setReports([newReport, ...reports]);
-    setSelectedReport(newReport);
-    resetModal();
+    // Save record row in Supabase PostgreSQL
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .insert([newRecord])
+      .select();
+
+    if (!error && data) {
+      const createdItem = {
+        ...data[0],
+        recordType: data[0].record_type,
+        imageUrl: data[0].image_url
+      };
+
+      setReports([createdItem, ...reports]);
+      setSelectedReport(createdItem);
+      resetModal();
+    }
   };
 
   const resetModal = () => {
@@ -163,9 +196,14 @@ export default function Prescriptions() {
     });
   };
 
-  const handleDelete = (id) => {
-    setReports(reports.filter((r) => r.id !== id));
-    if (selectedReport?.id === id) setSelectedReport(null);
+  // --- 3. DELETE FROM SUPABASE ---
+  const handleDelete = async (id) => {
+    const { error } = await supabase.from('prescriptions').delete().eq('id', id);
+
+    if (!error) {
+      setReports(reports.filter((r) => r.id !== id));
+      if (selectedReport?.id === id) setSelectedReport(null);
+    }
   };
 
   const filteredReports = reports.filter((item) => {
@@ -231,7 +269,11 @@ export default function Prescriptions() {
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
             All Reports ({filteredReports.length})
           </h2>
-          {filteredReports.length === 0 ? (
+          {loading ? (
+            <div className="bg-white p-8 rounded-2xl text-center border border-gray-200 text-gray-400 text-sm">
+              Loading records...
+            </div>
+          ) : filteredReports.length === 0 ? (
             <div className="bg-white p-8 rounded-2xl text-center border border-gray-200 text-gray-400 text-sm">
               No reports uploaded yet.
             </div>
