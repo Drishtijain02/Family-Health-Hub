@@ -1,49 +1,429 @@
-#root {
-  width: 100%;
-  min-height: 100vh;
-}
+/* =========================================================
+   FAMILY HEALTH HUB
+   APP SHELL
+   ========================================================= */
+
+/* ---------- GLOBAL RESET ---------- */
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  margin: 0;
+  padding: 0;
+  background: #f7f8f4 !important;
+}
+
 body {
   margin: 0;
-  background: #ffffff;
-  color: #111827;
-  font-family: Arial, sans-serif;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f7f8f4 !important;
+  color: #29352d !important;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 
-.app-navigation {
-  display: flex;
-  gap: 6px;
-  width: fit-content;
-  margin: 20px auto 0;
-  padding: 5px;
-  background: #eef0e8;
-  border: 1px solid #e2e3dc;
-  border-radius: 12px;
+#root {
+  min-height: 100vh;
+  background: #f7f8f4 !important;
+  color: #29352d !important;
 }
 
-.app-navigation button {
-  border: none;
-  border-radius: 9px;
-  padding: 9px 18px;
-  background: transparent;
-  color: #777a73;
+/* Prevent browser/theme styles from making form controls dark */
+
+button,
+input,
+select,
+textarea {
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
+}
+
+/* =========================================================
+   MAIN APP
+   ========================================================= */
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+  padding: 1px 0 70px;
+
+  background:
+    radial-gradient(
+      circle at 85% 8%,
+      rgba(116, 126, 99, 0.08),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 10% 35%,
+      rgba(116, 126, 99, 0.035),
+      transparent 25%
+    ),
+    #f7f8f4 !important;
+
+  color: #29352d !important;
+}
+
+/* =========================================================
+   TOP NAVIGATION
+   ========================================================= */
+
+.app-nav {
+  width: fit-content;
+  margin: 26px auto 28px;
+  padding: 5px;
+
+  display: flex;
+  align-items: center;
+  gap: 3px;
+
+  border: 1px solid #dfe4dc;
+  border-radius: 18px;
+
+  background: #ecefe8 !important;
+
+  box-shadow:
+    0 5px 18px rgba(43, 54, 45, 0.06);
+}
+
+.app-nav button {
+  min-width: 125px;
+  height: 47px;
+
+  padding: 0 23px;
+
+  border: 0;
+  border-radius: 13px;
+
+  background: transparent !important;
+
+  color: #687269 !important;
+
+  font-size: 15px;
+  font-weight: 600;
+
   cursor: pointer;
-  transition: 0.2s ease;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 }
 
-.app-navigation button:hover {
-  color: #626951;
+.app-nav button:hover {
+  color: #4f5c51 !important;
 }
 
-.app-navigation button.active {
-  background: #ffffff;
-  color: #70775f;
-  box-shadow: 0 2px 6px rgba(41, 44, 41, 0.08);
+.app-nav button.active {
+  background: #ffffff !important;
+  color: #4f5d48 !important;
+
+  box-shadow:
+    0 3px 11px rgba(45, 56, 47, 0.09);
+}
+
+.app-nav button:active {
+  transform: scale(0.98);
+}
+
+/* =========================================================
+   PROFILE CONTEXT
+   ========================================================= */
+
+.profile-test-section {
+  width: min(1180px, calc(100% - 56px));
+
+  margin: 0 auto 8px;
+  padding: 16px 20px;
+
+  border: 1px solid #e0e5dd;
+  border-radius: 16px;
+
+  background: #ffffff !important;
+
+  box-shadow:
+    0 6px 22px rgba(43, 54, 45, 0.045);
+}
+
+/* Small uppercase heading */
+
+.profile-test-label {
+  margin-bottom: 9px;
+
+  color: #788266 !important;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+
+  text-align: center;
+}
+
+/* Selector row */
+
+.profile-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+}
+
+.profile-selector label {
+  color: #59645c !important;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-selector select {
+  width: 285px;
+  height: 43px;
+
+  padding: 0 38px 0 14px;
+
+  border: 1px solid #dce2d9;
+  border-radius: 11px;
+
+  outline: none;
+
+  background: #fbfcfa !important;
+  color: #354139 !important;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  appearance: auto;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.profile-selector select:hover {
+  border-color: #c6cec1;
+  background: #ffffff !important;
+}
+
+.profile-selector select:focus {
+  border-color: #8b9679;
+
+  background: #ffffff !important;
+
+  box-shadow:
+    0 0 0 3px rgba(116, 126, 99, 0.12);
+}
+
+/* =========================================================
+   SELECTED PROFILE INDICATOR
+   ========================================================= */
+
+.selected-member-banner {
+  width: min(1180px, calc(100% - 56px));
+
+  margin: 0 auto 2px;
+  padding: 7px 3px 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+
+  gap: 9px;
+
+  color: #737d75 !important;
+
+  font-size: 13px;
+}
+
+.selected-member-banner::before {
+  content: "";
+
+  width: 7px;
+  height: 7px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #7c876b;
+}
+
+.selected-member-banner strong {
+  color: #344139 !important;
+
+  font-weight: 700;
+}
+
+.selected-member-banner span {
+  color: #7b857d !important;
+
+  margin-left: 2px;
+}
+
+/* =========================================================
+   PROFILE LOADING / ERROR
+   ========================================================= */
+
+.profile-test-message {
+  color: #717b73 !important;
+
+  font-size: 13px;
+  text-align: center;
+}
+
+.profile-test-message.error {
+  color: #9b4d44 !important;
+}
+
+/* =========================================================
+   MAKE SURE TIMELINE / REMINDER COMPONENTS
+   SIT NATURALLY INSIDE APP
+   ========================================================= */
+
+.app > .timeline-container,
+.app > .reminders-page {
+  width: min(1180px, calc(100% - 56px));
+
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/*
+   Timeline.css already contains the internal
+   layout/padding for Timeline.
+*/
+
+.app > .timeline-container {
+  width: min(1180px, calc(100% - 56px));
+}
+
+/* =========================================================
+   FORM CONTROL SAFETY
+   ========================================================= */
+
+input,
+select,
+textarea {
+  color-scheme: light !important;
+}
+
+/* Prevent dark-mode browser/user-agent overrides */
+
+input,
+select,
+textarea,
+button {
+  forced-color-adjust: none;
+}
+
+/* =========================================================
+   SELECTION
+   ========================================================= */
+
+::selection {
+  background: #dfe5d5;
+  color: #29352d;
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #eef1eb;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 20px;
+  background: #c4cbbd;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aab4a1;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 800px) {
+  .app {
+    padding-bottom: 45px;
+  }
+
+  .app-nav {
+    width: calc(100% - 32px);
+
+    margin-top: 18px;
+    margin-bottom: 20px;
+  }
+
+  .app-nav button {
+    flex: 1;
+    min-width: 0;
+
+    padding: 0 16px;
+  }
+
+  .profile-test-section {
+    width: calc(100% - 32px);
+  }
+
+  .profile-selector {
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 8px;
+  }
+
+  .profile-selector label {
+    text-align: center;
+  }
+
+  .profile-selector select {
+    width: 100%;
+  }
+
+  .selected-member-banner {
+    width: calc(100% - 32px);
+  }
+
+  .app > .timeline-container,
+  .app > .reminders-page {
+    width: calc(100% - 32px);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-nav button {
+    font-size: 14px;
+  }
+
+  .profile-test-section {
+    padding: 14px 15px;
+  }
+
+  .profile-test-label {
+    font-size: 9px;
+  }
 }
