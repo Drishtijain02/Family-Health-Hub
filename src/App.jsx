@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import { fetchMedicalRecords } from "./features/medical-records/medicalRecords";
 import AIChatbot from "./components/AIChatbot";
 import AIHealthSummary from "./components/AIHealthSummary";
+import MedicalRecordsPage from "./features/medical-records/MedicalRecordsPage";
 
 const avatarOptions = ["👨🏻", "👩🏻", "👦🏻", "👧🏻", "👴🏻", "👵🏻"];
 
@@ -906,6 +907,7 @@ function DashboardApp() {
             <button type="button" onClick={() => setSuccessMessage("")} aria-label="Dismiss message">×</button>
           </div>
         )}
+        <AIChatbot />
 
         {activeModule === "medical-records" ? (
           <MedicalRecordsPage

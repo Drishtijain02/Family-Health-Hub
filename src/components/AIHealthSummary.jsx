@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import "./AIHealthSummary.css";
 
-const AIHealthSummary = ({
+export default function AIHealthSummary({
   member,
   medicalReports = [],
   prescriptions = [],
   healthRecords = [],
-}) => {
-  const [summary, setSummary] = useState("");
+}) {
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const generateSummary = async () => {
-    if (!member?.name) return;
+    if (!member) return;
 
     setLoading(true);
     setError("");
@@ -36,87 +36,123 @@ const AIHealthSummary = ({
 
       const data = await response.json();
 
-      if (!data.success) {
-        throw new Error(data.error || "Unable to generate summary");
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to generate health summary");
       }
 
       setSummary(data.summary);
     } catch (err) {
-      console.error("AI Health Summary error:", err);
-      setError("Unable to generate health summary. Please try again.");
+      console.error("Health summary error:", err);
+      setError(err.message || "Failed to generate health summary");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    generateSummary();
-  }, [member]);
+  if (!member) {
+    return null;
+  }
 
   return (
     <div className="ai-health-summary">
-      <div className="ai-summary-header">
+      <div className="ai-health-summary-header">
         <div>
-          <h2>AI Health Summary</h2>
-          <p>Your recent health information at a glance</p>
+          <span className="ai-health-summary-label">AI HEALTH SUMMARY</span>
+          <h3>{member.name}'s Health Overview</h3>
         </div>
 
-        <span className="ai-badge">✦ AI</span>
+        <button
+          type="button"
+          className="ai-summary-generate-btn"
+          onClick={generateSummary}
+          disabled={loading}
+        >
+          {loading ? "Analyzing..." : summary ? "Regenerate" : "Generate Health Summary"}
+        </button>
       </div>
+
+      {error && (
+        <div className="ai-summary-error">
+          {error}
+        </div>
+      )}
+
+      {!summary && !loading && !error && (
+        <div className="ai-summary-empty">
+          <p>
+            Generate a short AI-powered overview using this member's available
+            health information.
+          </p>
+        </div>
+      )}
 
       {loading && (
         <div className="ai-summary-loading">
-          <div className="loading-icon">✦</div>
-          <strong>Analyzing health information...</strong>
-          <p>Generating a personalized overview for {member?.name}.</p>
+          <span>Analyzing health information...</span>
         </div>
       )}
 
-      {error && !loading && (
-        <div className="ai-summary-error">
-          <span>⚠️</span>
-          <div>
-            <strong>Unable to generate summary</strong>
-            <p>{error}</p>
-            <button onClick={generateSummary}>Try Again</button>
+      {summary && !loading && (
+        <div className="ai-summary-content">
+          <div className="ai-summary-status">
+            <span className="ai-summary-status-label">Overall status</span>
+            <strong>{summary.overall_status || "Informational"}</strong>
           </div>
+
+          {summary.overall_summary && (
+            <p className="ai-summary-overview">
+              {summary.overall_summary}
+            </p>
+          )}
+
+          {Array.isArray(summary.key_stats) &&
+            summary.key_stats.length > 0 && (
+              <div className="ai-summary-section">
+                <h4>Quick stats</h4>
+
+                <div className="ai-summary-stats">
+                  {summary.key_stats.map((stat, index) => (
+                    <div className="ai-summary-stat" key={index}>
+                      <span>{stat.label}</span>
+                      <strong>{stat.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {Array.isArray(summary.attention_items) &&
+            summary.attention_items.length > 0 && (
+              <div className="ai-summary-section">
+                <h4>Keep an eye on</h4>
+
+                <ul>
+                  {summary.attention_items.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          {Array.isArray(summary.positive_findings) &&
+            summary.positive_findings.length > 0 && (
+              <div className="ai-summary-section">
+                <h4>Good to know</h4>
+
+                <ul>
+                  {summary.positive_findings.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          <p className="ai-summary-disclaimer">
+            AI-generated information is for general guidance only and should
+            not replace professional medical advice.
+          </p>
         </div>
       )}
-
-      {summary && !loading && !error && (
-        <div className="ai-generated-summary">
-          <div className="summary-icon">✓</div>
-
-          <div className="summary-content">
-            <strong>AI Health Overview</strong>
-
-            <div className="summary-text">
-              {summary}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!loading && !error && !summary && (
-        <div className="ai-summary-empty">
-          No health information is available for analysis yet.
-        </div>
-      )}
-
-      <button
-        className="view-insights-btn"
-        onClick={generateSummary}
-        disabled={loading}
-      >
-        {loading ? "Analyzing..." : "↻ Refresh Health Summary"}
-      </button>
-
-      <p className="ai-disclaimer">
-        AI-generated information is for general understanding only and does
-        not replace professional medical advice.
-      </p>
     </div>
   );
-};
-
-export default AIHealthSummary;
+}
