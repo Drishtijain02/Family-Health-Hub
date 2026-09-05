@@ -85,7 +85,7 @@ async def extract_text(file: UploadFile = File(...)):
                 extracted_text = digital_text
             else:
                 # FALLBACK: Convert scanned PDF to images and run OCR (slow)
-                images = convert_from_bytes(contents, poppler_path=r'C:\Release-26.02.0-0\poppler-26.02.0\Library\bin')
+                images = convert_from_bytes(contents, poppler_path=r'C:\poppler\poppler-26.07.0\Library\bin')
                 for img in images:
                     text = pytesseract.image_to_string(img)
                     extracted_text += text + "\n"

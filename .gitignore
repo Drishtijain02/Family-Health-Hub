@@ -25,3 +25,5 @@ dist-ssr
 *.sw?
 .env
 supabase/.temp/
+server/.env
+
