@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
-const TEST_AUTH_USER_ID = 'fb98a229-4569-4e2e-99b7-0f20528a332e'
+const TEST_AUTH_USER_ID = '03ae1632-aeef-4697-8a40-a6fa08528630'
 const TEST_FAMILY_MEMBER = {
-  id: '8b9df4fa-2720-4106-a8ef-50169b2e8e03',
-  name: 'Avinandan Kumar',
+  id: '2c3b3a3c-0dde-453e-9b48-0628b99725de',
+  name: 'Drishti Jain',
   relation: 'Self',
 }
 
