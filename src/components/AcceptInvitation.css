@@ -1,372 +1,390 @@
-/* =========================================
-   HEALTHHUB - ACCEPT INVITATION
-   Matches the existing light sage/olive theme
-   ========================================= */
+/* =========================================================
+   HEALTHHUB — ACCEPT INVITATION
+   ========================================================= */
 
-.invitation-page {
+.accept-invitation-page {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
+  box-sizing: border-box;
 
   background:
     radial-gradient(
-      circle at 90% 10%,
-      rgba(116, 132, 101, 0.10),
-      transparent 30%
+      circle at 15% 10%,
+      rgba(214, 228, 210, 0.65),
+      transparent 35%
     ),
-    #f7f8f4;
-
-  font-family: Arial, Helvetica, sans-serif;
+    linear-gradient(
+      135deg,
+      #f5f8f3 0%,
+      #edf3eb 100%
+    );
 }
 
-.invitation-card {
+/* Main card */
+
+.accept-invitation-page .invitation-card {
   width: 100%;
-  max-width: 480px;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 42px 46px 34px;
+  box-sizing: border-box;
 
-  padding: 42px;
+  background: #fffefa;
+  border: 1px solid #dfe6dc;
+  border-radius: 26px;
 
-  background: #ffffff;
-
-  border: 1px solid #e2e6dc;
-  border-radius: 20px;
-
-  box-shadow: 0 12px 35px rgba(72, 82, 62, 0.08);
+  box-shadow:
+    0 25px 70px rgba(44, 62, 49, 0.12),
+    0 5px 20px rgba(44, 62, 49, 0.05);
 }
 
-/* ================================
-   BRAND
-   ================================ */
+/* Header */
 
-.invitation-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  margin-bottom: 30px;
+.invitation-header {
+  margin-bottom: 28px;
 }
 
-.invitation-logo {
-  width: 46px;
-  height: 46px;
+.invitation-eyebrow {
+  display: block;
+  margin-bottom: 14px;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 13px;
-
-  background: #748465;
-  color: #ffffff;
-
-  font-size: 21px;
-  font-weight: 700;
-
-  box-shadow: 0 5px 12px rgba(80, 95, 70, 0.12);
-}
-
-.invitation-brand h1 {
-  margin: 0;
-
-  color: #394238;
-
-  font-size: 19px;
-  font-weight: 700;
-}
-
-.invitation-brand p {
-  margin: 3px 0 0;
-
-  color: #8a9382;
-
+  color: #70836e;
   font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
 }
 
-/* ================================
-   INVITATION ICON
-   ================================ */
+.invitation-header h1 {
+  margin: 0 0 13px;
 
-.invitation-icon {
-  width: 54px;
-  height: 54px;
-
-  margin: 0 auto 18px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 50%;
-
-  background: #eef2e9;
-  color: #748465;
-
-  font-size: 23px;
-  font-weight: 700;
+  color: #25362d;
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -1.1px;
 }
 
-/* ================================
-   HEADING
-   ================================ */
-
-.invitation-card h2 {
+.invitation-header p {
   margin: 0;
 
-  text-align: center;
-
-  color: #343c32;
-
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.invitation-subtitle {
-  max-width: 390px;
-
-  margin: 10px auto 26px;
-
-  text-align: center;
-
-  color: #7b8477;
-
-  font-size: 14px;
+  color: #718078;
+  font-size: 16px;
   line-height: 1.6;
 }
 
-/* ================================
-   FAMILY INVITATION INFO
-   ================================ */
+/* Family information card */
 
-.family-invite-box {
-  padding: 18px;
+.invitation-family-box {
+  width: 100%;
+  margin-bottom: 28px;
+  padding: 22px 24px;
+  box-sizing: border-box;
 
-  margin-bottom: 24px;
-
-  background: #f5f7f1;
-
-  border: 1px solid #e1e6d9;
-  border-radius: 13px;
+  background: #f6f9f4;
+  border: 1px solid #dce5d9;
+  border-radius: 17px;
 }
 
-.family-invite-label {
+.family-label {
   margin-bottom: 5px;
 
-  color: #929a8b;
-
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.4px;
+  color: #81907f;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
 }
 
-.family-invite-name {
-  margin-bottom: 15px;
+.family-name {
+  margin-bottom: 17px;
 
-  color: #46513f;
-
-  font-size: 18px;
-  font-weight: 700;
+  color: #2d3d33;
+  font-size: 25px;
+  font-weight: 800;
 }
 
-.family-invite-details {
+.invitation-detail-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 15px;
+  gap: 20px;
 
-  padding-top: 10px;
+  padding: 12px 0;
 
-  border-top: 1px solid #e3e7de;
-
-  font-size: 12px;
+  border-top: 1px solid #e1e8de;
 }
 
-.family-invite-details + .family-invite-details {
-  margin-top: 9px;
+.invitation-detail-row span {
+  color: #87948b;
+  font-size: 14px;
 }
 
-.family-invite-details span {
-  color: #8a9384;
-}
-
-.family-invite-details strong {
-  color: #59644f;
-  font-weight: 600;
-
+.invitation-detail-row strong {
+  color: #35453b;
+  font-size: 14px;
+  font-weight: 750;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
-/* ================================
-   FORM
-   ================================ */
+/* Form */
+
+.accept-invitation-page form {
+  width: 100%;
+}
 
 .form-group {
-  margin-bottom: 18px;
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-
   margin-bottom: 8px;
 
-  color: #505a4a;
-
-  font-size: 13px;
-  font-weight: 600;
+  color: #435249;
+  font-size: 14px;
+  font-weight: 750;
 }
 
 .form-group input {
   width: 100%;
+  height: 56px;
+  padding: 0 16px;
   box-sizing: border-box;
 
-  padding: 13px 14px;
-
-  border: 1px solid #d9ded3;
-  border-radius: 10px;
+  border: 1px solid #d7e0d4;
+  border-radius: 13px;
 
   outline: none;
+  background: #fcfdfb;
 
-  background: #ffffff;
-  color: #3e4639;
-
-  font-size: 14px;
+  color: #293930;
+  font-family: inherit;
+  font-size: 15px;
 
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
 }
 
 .form-group input::placeholder {
-  color: #a5aca0;
+  color: #a1ada5;
+}
+
+.form-group input:hover:not(:disabled) {
+  border-color: #c5d1c1;
 }
 
 .form-group input:focus {
-  border-color: #8b9a78;
+  border-color: #7d9678;
+  background: #ffffff;
 
-  box-shadow: 0 0 0 3px rgba(116, 132, 101, 0.10);
+  box-shadow:
+    0 0 0 4px rgba(111, 134, 107, 0.12);
 }
 
-/* ================================
-   ERROR
-   ================================ */
-
-.invitation-error {
-  margin: 5px 0 14px;
-
-  color: #c45d55;
-
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-/* ================================
-   ACCEPT BUTTON
-   ================================ */
-
-.accept-invitation-button {
-  width: 100%;
-
-  margin-top: 5px;
-  padding: 13px 16px;
-
-  border: none;
-  border-radius: 10px;
-
-  background: #748465;
-  color: #ffffff;
-
-  font-size: 14px;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
-}
-
-.accept-invitation-button:hover {
-  background: #657555;
-}
-
-.accept-invitation-button:active {
-  transform: translateY(1px);
-}
-
-.accept-invitation-button:disabled {
+.form-group input:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
-/* ================================
-   SECURITY
-   ================================ */
+/* Error */
 
-.invitation-security {
-  margin-top: 20px;
+.invitation-error {
+  width: 100%;
+  margin: 15px 0;
+  padding: 13px 15px;
+  box-sizing: border-box;
 
-  padding-top: 17px;
+  border: 1px solid #efcbc4;
+  border-radius: 12px;
 
-  border-top: 1px solid #e8ebe4;
+  background: #fff6f4;
+  color: #9b5147;
 
-  text-align: center;
-
-  color: #929a8b;
-
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
-/* ================================
-   BACK TO LOGIN
-   ================================ */
+/* Accept button */
 
-.invitation-back {
-  display: block;
-
-  margin: 19px auto 0;
-
-  padding: 0;
+.accept-invitation-button {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 5px;
+  padding: 0 20px;
 
   border: none;
+  border-radius: 13px;
+
+  background: #718868;
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 9px 24px rgba(91, 117, 92, 0.16);
+
+  transition:
+    background 0.18s ease,
+    transform 0.15s ease,
+    box-shadow 0.18s ease;
+}
+
+.accept-invitation-button:hover:not(:disabled) {
+  background: #637b60;
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 12px 28px rgba(91, 117, 92, 0.21);
+}
+
+.accept-invitation-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.accept-invitation-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+/* Security message */
+
+.invitation-security {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  margin-top: 26px;
+  padding-top: 21px;
+
+  border-top: 1px solid #e2e8df;
+
+  color: #89958d;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Back to login */
+
+.back-to-login-link {
+  display: block;
+
+  margin: 13px auto 0;
+  padding: 8px 14px;
+
+  border: none;
+  border-radius: 8px;
 
   background: transparent;
+  color: #627a60;
 
-  color: #748465;
-
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.back-to-login-link:hover:not(:disabled) {
+  background: #eef3ec;
+  color: #4f684d;
+}
+
+.back-to-login-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading */
+
+.invitation-loading {
+  padding: 50px 20px;
+
+  color: #66756c;
+  font-size: 15px;
+  text-align: center;
+}
+
+/* Error / unavailable state */
+
+.invitation-card .invitation-back-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 15px;
+
+  border: 1px solid #d5ded2;
+  border-radius: 11px;
+
+  background: #f7faf5;
+  color: #566a57;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
 
   cursor: pointer;
 }
 
-.invitation-back:hover {
-  color: #59674f;
+.invitation-card .invitation-back-button:hover {
+  background: #edf3eb;
 }
 
-/* ================================
-   RESPONSIVE
-   ================================ */
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
-@media (max-width: 520px) {
-  .invitation-page {
-    padding: 25px 15px;
+@media (max-width: 650px) {
+  .accept-invitation-page {
+    align-items: flex-start;
+    padding: 20px 12px;
   }
 
-  .invitation-card {
-    padding: 30px 24px;
-    border-radius: 17px;
+  .accept-invitation-page .invitation-card {
+    max-width: 100%;
+    padding: 30px 22px 25px;
+    border-radius: 21px;
   }
 
-  .invitation-card h2 {
-    font-size: 25px;
+  .invitation-header h1 {
+    font-size: 31px;
   }
 
-  .family-invite-details {
+  .invitation-header p {
+    font-size: 14px;
+  }
+
+  .invitation-family-box {
+    padding: 18px;
+  }
+
+  .family-name {
+    font-size: 22px;
+  }
+
+  .invitation-detail-row {
+    align-items: flex-start;
     flex-direction: column;
-    gap: 3px;
+    gap: 5px;
   }
 
-  .family-invite-details strong {
+  .invitation-detail-row strong {
     text-align: left;
   }
 }

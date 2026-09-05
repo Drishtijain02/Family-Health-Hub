@@ -1,669 +1,2397 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import DevelopmentTestBridge from './features/medical-records/DevelopmentTestBridge'
-import {
-  deleteMedicalRecord,
-  fetchMedicalRecords,
-  getMedicalRecordSignedUrl,
-  uploadMedicalRecord,
-} from './features/medical-records/medicalRecords'
-import { analyzeMedicalReport } from './features/medical-records/analysisService'
-import './App.css'
-import ReactMarkdown from "react-markdown";
-import AIChatbot from "./components/AIChatbot";
-const mockReports = [
-  { id: 1, name: 'CBC Blood Report', date: 'Feb 24, 2025', status: 'Analyzed', type: 'Blood test', uploadedBy: 'Sunita Sharma' },
-  { id: 2, name: 'Thyroid Test Report', date: 'Feb 18, 2025', status: 'Analyzed', type: 'Lab report', uploadedBy: 'Sunita Sharma' },
-  { id: 3, name: 'Vitamin D Test Report', date: 'Feb 10, 2025', status: 'Analyzed', type: 'Blood test', uploadedBy: 'Sunita Sharma' },
-  { id: 4, name: 'ECG Report', date: 'Feb 05, 2025', status: 'Analyzed', type: 'Cardiology', uploadedBy: 'Sunita Sharma' },
-  { id: 5, name: 'Liver Function Test', date: 'Jan 28, 2025', status: 'Analyzed', type: 'Lab report', uploadedBy: 'Sunita Sharma' },
-  { id: 6, name: 'Lipid Profile', date: 'Jan 20, 2025', status: 'Analyzed', type: 'Blood test', uploadedBy: 'Sunita Sharma' },
-  { id: 7, name: 'X-Ray Chest', date: 'Jan 12, 2025', status: 'Pending', type: 'Imaging', uploadedBy: 'Sunita Sharma' },
-  { id: 8, name: 'Urine Routine Test', date: 'Jan 05, 2025', status: 'Analyzed', type: 'Lab report', uploadedBy: 'Sunita Sharma' },
-]
+import MedicalRecordsPage from "./features/medical-records/MedicalRecordsPage";
+import "./App.css";
+import { supabase } from "./lib/supabase";
+import Login from "./components/Login";
+import CreateFamily from "./components/CreateFamily";
+import AcceptInvitation from "./components/AcceptInvitation";
+import React, { useEffect, useState } from "react";
+import { fetchMedicalRecords } from "./features/medical-records/medicalRecords";
 
-const navigation = ['Overview', 'Medical Reports', 'Prescriptions', 'Timeline', 'AI Health', 'Reminders', 'Emergency Card', 'Settings']
-const familyMembers = [['Sunita', 'Mother', 'S'], ['Rajesh', 'Father', 'R'], ['Ananya', 'Daughter', 'A'], ['Arjun', 'Son', 'A'], ['Kamla', 'Dadi', 'K']]
+const avatarOptions = ["👨🏻", "👩🏻", "👦🏻", "👧🏻", "👴🏻", "👵🏻"];
 
-function Icon({ name, size = 18 }) {
-  const paths = {
-    arrow: <path d="m14 6-6 6 6 6M8 12h12" />,
-    home: <><path d="m3 10 9-7 9 7v10H3z" /><path d="M9 20v-6h6v6" /></>, report: <><path d="M6 3h9l4 4v14H6z" /><path d="M15 3v5h5M9 13h6M9 17h6" /></>, pill: <><path d="m9 5 10 10a4 4 0 0 1-6 6L3 11a4 4 0 0 1 6-6Z" /><path d="m6 8 10 10" /></>, timeline: <><circle cx="6" cy="6" r="2" /><circle cx="18" cy="18" r="2" /><path d="M8 6h8v10" /></>, spark: <path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />, bell: <><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path d="M10 21h4" /></>, card: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h3" /></>, settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2h-3v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-2.1-2.1.1-.1A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.5-1H5.3v-3h.2A1.7 1.7 0 0 0 7 10a1.7 1.7 0 0 0-.3-1.9l-.1-.1 2.1-2.1.1.1A1.7 1.7 0 0 0 10.7 6a1.7 1.7 0 0 0 1-1.5v-.2h3v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 2.1 2.1-.1.1A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.5 1h.2v3h-.2a1.7 1.7 0 0 0-1.5 1Z" /></>, search: <><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></>, filter: <path d="M4 6h16M7 12h10m-7 6h4" />, sort: <><path d="M8 6v12M5 9l3-3 3 3M16 18V6m-3 9 3 3 3-3" /></>, upload: <><path d="M12 16V4m-4 4 4-4 4 4" /><path d="M5 14v5h14v-5" /></>, more: <><circle cx="5" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="19" cy="12" r="1" fill="currentColor" /></>, close: <path d="m6 6 12 12M18 6 6 18" />, check: <path d="m5 12 4 4L19 6" />, document: <><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5M9 13h6M9 17h4" /></>,
-  }
-  return <svg className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
-}
+function getAvatarForRelation(relation) {
+  const value = (relation || "").toLowerCase();
 
-function EmptyState() { return <div className="empty-state"><div className="empty-icon"><Icon name="document" size={25} /></div><h3>No Medical Reports Yet</h3><p>Upload your first medical report to get started.</p></div> }
-function ReportPreview({ report }) {
-  const [fileUrl, setFileUrl] = useState('')
-  const [fileType, setFileType] = useState('')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let active = true
-
-    async function loadFile() {
-      try {
-        setLoading(true)
-        setFileUrl('')
-        setFileType('')
-
-        if (!report?.file_url) {
-          if (active) {
-            setLoading(false)
-          }
-          return
-        }
-
-        const url = await getMedicalRecordSignedUrl(report.file_url)
-
-        let detectedType = ''
-
-        try {
-          const response = await fetch(url, {
-            method: 'HEAD'
-          })
-
-          detectedType = response.headers.get('content-type') || ''
-        } catch (error) {
-          console.warn('Unable to detect file type:', error)
-        }
-
-        if (active) {
-          setFileUrl(url)
-          setFileType(detectedType)
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('Unable to load report:', error)
-
-        if (active) {
-          setFileUrl('')
-          setFileType('')
-          setLoading(false)
-        }
-      }
-    }
-
-    loadFile()
-
-    return () => {
-      active = false
-    }
-  }, [report])
-
-  if (!report) {
-    return (
-      <div className="report-preview">
-        <p>No report selected.</p>
-      </div>
-    )
+  if (
+    value.includes("mother") ||
+    value.includes("wife") ||
+    value.includes("sister")
+  ) {
+    return "👩🏻";
   }
 
-  const fileName =
-    report.name ||
-    report.title ||
-    'Medical Report'
-
-  const reportDate =
-    report.date ||
-    report.record_date ||
-    'Date not available'
-
-  const reportType =
-    report.type ||
-    report.record_type ||
-    report.category ||
-    'Medical Report'
-
-  const isImage = fileType.startsWith('image/')
-  const isPdf = fileType === 'application/pdf'
-
-  return (
-    <div className="report-preview">
-
-      <div className="preview-brand">
-        <span className="preview-mark">+</span>
-
-        <div>
-          <strong>Family Health Hub</strong>
-          <small>Medical Report</small>
-        </div>
-      </div>
-
-      <div className="preview-heading">
-        <div>
-          <p>{reportType}</p>
-          <h3>{fileName}</h3>
-        </div>
-
-        <span>Available</span>
-      </div>
-
-      <div className="preview-patient">
-
-        <div>
-          <small>Report name</small>
-          <strong>{fileName}</strong>
-        </div>
-
-        <div>
-          <small>Report type</small>
-          <strong>{reportType}</strong>
-        </div>
-
-        <div>
-          <small>Uploaded / recorded on</small>
-          <strong>{reportDate}</strong>
-        </div>
-
-      </div>
-
-      <div className="real-report-viewer">
-
-        {loading && (
-          <div className="report-loading">
-            Loading your uploaded report...
-          </div>
-        )}
-
-        {!loading && fileUrl && isImage && (
-          <img
-            src={fileUrl}
-            alt={fileName}
-            className="uploaded-report-image"
-          />
-        )}
-
-        {!loading && fileUrl && isPdf && (
-          <iframe
-            src={fileUrl}
-            title={fileName}
-            className="uploaded-report-frame"
-          />
-        )}
-
-        {!loading && fileUrl && !isImage && !isPdf && (
-          <div className="report-loading">
-            This file type cannot be previewed directly.
-            <br />
-            Please open the original report.
-          </div>
-        )}
-
-        {!loading && !fileUrl && (
-          <div className="report-loading">
-            Unable to display this report.
-          </div>
-        )}
-
-      </div>
-
-      <p className="preview-note">
-        This is the original report uploaded to Family Health Hub.
-        Results should be interpreted by a qualified healthcare
-        professional alongside the patient's medical history.
-      </p>
-
-    </div>
-  )
-}
-function AiSummary({ report, analysisState, onAnalyze }) {
-  const { status, data, error } = analysisState
-
-  if (status === 'not-analyzed') {
-    return (
-      <div className="ai-summary-empty">
-        <div className="summary-icon-large">
-          <Icon name="spark" size={32} />
-        </div>
-
-        <h3>Understand Your Report</h3>
-
-        <p>
-          Get a simple explanation of your medical report,
-          including important findings, medical terms,
-          possible reasons and suggested next steps.
-        </p>
-
-        <button
-          className="primary-button"
-          onClick={() => onAnalyze(report)}
-        >
-          <Icon name="spark" />
-          Analyze Report with AI
-        </button>
-
-        <p className="ai-disclaimer">
-          AI-generated information is for educational purposes
-          only and is not a medical diagnosis.
-        </p>
-      </div>
-    )
+  if (
+    value.includes("father") ||
+    value.includes("husband") ||
+    value.includes("brother")
+  ) {
+    return "👨🏻";
   }
 
-  if (status === 'analyzing') {
-    return (
-      <div className="ai-summary-loading">
-        <div className="loading-spinner" />
+  if (value.includes("daughter")) return "👧🏻";
+  if (value.includes("son")) return "👦🏻";
 
-        <h3>Understanding Your Report...</h3>
-
-        <p>
-          We're reading the report and preparing a simple
-          explanation for you.
-        </p>
-      </div>
-    )
+  if (
+    value.includes("grandmother") ||
+    value.includes("grandma") ||
+    value.includes("dadi") ||
+    value.includes("nani")
+  ) {
+    return "👵🏻";
   }
 
-  if (status === 'error') {
-    return (
-      <div className="ai-summary-error">
-        <h3>Analysis Failed</h3>
-
-        <p className="error-message">
-          {error || 'Unable to analyze the report.'}
-        </p>
-
-        <button
-          className="secondary-button"
-          onClick={() => onAnalyze(report)}
-        >
-          Retry Analysis
-        </button>
-      </div>
-    )
+  if (
+    value.includes("grandfather") ||
+    value.includes("grandpa") ||
+    value.includes("dada") ||
+    value.includes("nana")
+  ) {
+    return "👴🏻";
   }
 
-  if (!data) {
-    return null
-  }
-
-  return (
-    <div className="ai-summary">
-
-      <div className="ai-summary-intro">
-
-        <div className="summary-header">
-
-          <span className="summary-icon">
-            <Icon name="spark" />
-          </span>
-
-          <div>
-            <span className="section-label">
-              AI HEALTH SUMMARY
-            </span>
-
-            <h3>
-              {data.overall_status}
-            </h3>
-          </div>
-
-        </div>
-
-        <p className="summary-text">
-          {data.overall_summary}
-        </p>
-
-      </div>
-
-
-      {data.key_findings?.length > 0 && (
-        <section className="ai-section">
-
-          <h4>What Stands Out?</h4>
-
-          <div className="finding-list">
-
-            {data.key_findings.map((finding, index) => (
-
-              <div
-                className="finding-card"
-                key={index}
-              >
-
-                <div className="finding-header">
-
-                  <strong>
-                    {finding.title}
-                  </strong>
-
-                  {finding.value && (
-                    <span className="finding-value">
-                      {finding.value}
-                    </span>
-                  )}
-
-                </div>
-
-                {finding.reference_range && (
-                  <div className="finding-reference">
-                    Reference range: {finding.reference_range}
-                  </div>
-                )}
-
-                <p>
-                  {finding.explanation}
-                </p>
-
-                {finding.why_it_matters && (
-                  <div className="why-it-matters">
-                    <strong>Why this matters:</strong>
-                    <span>{finding.why_it_matters}</span>
-                  </div>
-                )}
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </section>
-      )}
-
-
-      {data.normal_findings?.length > 0 && (
-        <section className="ai-section">
-
-          <h4>What Looks Reassuring?</h4>
-
-          <div className="normal-findings">
-
-            {data.normal_findings.map((item, index) => (
-
-              <div
-                className="normal-finding"
-                key={index}
-              >
-
-                <span className="normal-check">
-                  ✓
-                </span>
-
-                <div>
-
-                  <strong>
-                    {item.title}
-                  </strong>
-
-                  {item.value && (
-                    <span className="normal-value">
-                      {item.value}
-                    </span>
-                  )}
-
-                  <p>
-                    {item.explanation}
-                  </p>
-
-                </div>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </section>
-      )}
-
-
-      {data.medical_terms?.length > 0 && (
-        <section className="ai-section">
-
-          <h4>What Do These Medical Terms Mean?</h4>
-
-          <div className="medical-terms">
-
-            {data.medical_terms.map((item, index) => (
-
-              <div
-                className="medical-term"
-                key={index}
-              >
-
-                <strong>
-                  {item.term}
-                </strong>
-
-                <p>
-                  {item.meaning}
-                </p>
-
-                {item.why_it_is_measured && (
-                  <div>
-                    <span>Why it is measured:</span>
-                    {item.why_it_is_measured}
-                  </div>
-                )}
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </section>
-      )}
-
-
-      {data.possible_explanations && (
-  <section className="ai-section">
-    <h4>What Could Explain These Findings?</h4>
-
-    <div className="possible-explanations">
-      <div className="explanation-card">
-        <p>{data.possible_explanations}</p>
-      </div>
-    </div>
-
-    <p className="ai-small-note">
-      These are possible explanations only. The report
-      alone cannot determine the underlying cause.
-    </p>
-  </section>
-)}
-
-
-      {data.what_to_do_next?.length > 0 && (
-        <section className="ai-section">
-
-          <h4>What Should I Do Next?</h4>
-
-          <div className="next-steps">
-
-            {data.what_to_do_next.map((step, index) => (
-
-              <div
-                className="next-step"
-                key={index}
-              >
-
-                <span>
-                  {index + 1}
-                </span>
-
-                <p>
-                  {step}
-                </p>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </section>
-      )}
-
-
-      {data.simple_takeaway && (
-        <section className="ai-takeaway">
-
-          <span className="section-label">
-            IN SIMPLE WORDS
-          </span>
-
-          <h4>So, what should I understand?</h4>
-
-          <p>
-            {data.simple_takeaway}
-          </p>
-
-        </section>
-      )}
-
-
-      <div className="ai-disclaimer">
-
-        <strong>Important:</strong>
-
-        <span>
-          This AI-generated explanation is for informational
-          purposes only and is not a medical diagnosis.
-          Always discuss medical results with a qualified
-          healthcare professional.
-        </span>
-
-      </div>
-
-    </div>
-  )
-}
-
-function ChartView() { return <div className="chart-view"><div><p>Haemoglobin trend</p><h3>Recent test history</h3></div><svg viewBox="0 0 520 180" role="img" aria-label="Mock haemoglobin trend chart"><path className="chart-grid" d="M35 25H500M35 80H500M35 135H500M35 150H500" /><path className="chart-line" d="M48 120 C110 100 130 110 175 88 S255 106 300 77 S390 62 465 45" /><circle cx="48" cy="120" r="4" /><circle cx="175" cy="88" r="4" /><circle cx="300" cy="77" r="4" /><circle cx="465" cy="45" r="4" /><text x="40" y="172">May 2024</text><text x="157" y="172">Oct 2024</text><text x="280" y="172">Jan 2025</text><text x="438" y="172">Feb 2025</text></svg><p className="chart-caption">Mock chart based on report history. It is for informational viewing only.</p></div> }
-
-function formatRecordDate(value) {
-  if (!value) return 'Date not added'
-  if (value === 'Today') return value
-  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`))
-}
-
-function mapMedicalRecord(record, member) {
-  return { ...record, name: record.title, date: formatRecordDate(record.record_date), status: 'Available', type: record.record_type || record.category || 'Medical report', uploadedBy: member.name, isRealRecord: true }
-}
-
-function UploadModal({ onClose, onUploaded, onUpload, isRealDataMode }) {
-  const [file, setFile] = useState(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [status, setStatus] = useState('idle')
-  const [error, setError] = useState('')
-  const [form, setForm] = useState({ title: '', recordType: '', category: '', date: '', description: '' })
-  function setChosenFile(nextFile) { if (!nextFile) return; const extension = nextFile.name.split('.').pop()?.toLowerCase(); if (!['pdf', 'jpg', 'jpeg', 'png'].includes(extension)) { setFile(null); setError('Please choose a PDF, JPG, JPEG, or PNG file.'); setStatus('error'); return }; setFile(nextFile); setError(''); setStatus('selected'); setForm((current) => ({ ...current, title: current.title || nextFile.name.replace(/\.[^/.]+$/, '') })) }
-  async function handleSubmit(event) { event.preventDefault(); if (!file || !form.title.trim()) { setError(!file ? 'Choose a report before uploading.' : 'Add a report title before uploading.'); setStatus('error'); return }; setStatus('uploading'); setError(''); try { if (onUpload) { await onUpload({ file, title: form.title.trim(), recordType: form.recordType, category: form.category, recordDate: form.date, description: form.description }) } else { await new Promise((resolve) => window.setTimeout(resolve, 850)); onUploaded({ name: form.title.trim(), date: form.date || 'Today', status: 'Pending', type: form.recordType || 'Medical report', uploadedBy: 'Sunita Sharma' }) }; setStatus('success') } catch (uploadError) { setError(uploadError.message || 'Unable to upload this medical report.'); setStatus('error') } }
-  return <div className="modal-backdrop" role="presentation"><section className="upload-modal" role="dialog" aria-modal="true" aria-labelledby="upload-title"><button className="icon-button modal-close" onClick={onClose} aria-label="Close upload panel"><Icon name="close" /></button><p className="eyebrow">Medical reports</p><h2 id="upload-title">Upload Report</h2><p className="modal-intro">{isRealDataMode ? 'Add a private report for the signed-in development test member.' : 'Add a report for Sunita. This demo keeps the file only in your browser session.'}</p>{status === 'success' ? <div className="upload-success"><span><Icon name="check" size={26} /></span><h3>Report ready to review</h3><p>{isRealDataMode ? 'Your report was uploaded to the private development test archive.' : 'Your mock report has been added to the list. No file was uploaded to storage.'}</p><button className="primary-button" onClick={onClose}>Done</button></div> : <form onSubmit={handleSubmit}><label className={`drop-zone ${isDragging ? 'is-dragging' : ''} ${file ? 'has-file' : ''}`} onDragOver={(event) => { event.preventDefault(); setIsDragging(true) }} onDragLeave={() => setIsDragging(false)} onDrop={(event) => { event.preventDefault(); setIsDragging(false); setChosenFile(event.dataTransfer.files?.[0]) }}><input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(event) => setChosenFile(event.target.files?.[0])} /><span className="drop-icon"><Icon name="upload" /></span>{file ? <span className="selected-file"><strong>{file.name}</strong><small>{(file.size / 1024 / 1024).toFixed(2)} MB · Ready to upload</small></span> : <span><strong>Drag & drop your report here</strong><small>or browse files from your device</small></span>}<span className="browse-button">Browse files</span></label><p className="format-note">Supported formats: PDF, JPG, JPEG, PNG</p>{error && <p className="form-error">{error}</p>}<label>Report title<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="e.g. Annual blood test" /></label><div className="modal-form-grid"><label>Record type<select value={form.recordType} onChange={(event) => setForm({ ...form, recordType: event.target.value })}><option value="">Select type</option><option>Lab Report</option><option>Imaging Report</option><option>Prescription</option><option>Consultation</option><option>Other</option></select></label><label>Category<input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} placeholder="e.g. Blood work" /></label></div><label>Record date<input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} /></label><label>Description <span className="optional">Optional</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} rows="3" placeholder="Add a short note about this report" /></label><div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" type="submit" disabled={status === 'uploading'}>{status === 'uploading' ? 'Uploading…' : 'Upload report'}</button></div></form>}</section></div>
+  return "👨🏻";
 }
 
 function App() {
-  const [reports, setReports] = useState(mockReports)
-  const [selectedReportId, setSelectedReportId] = useState(1)
-  const [activeTab, setActiveTab] = useState('Report')
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState('All')
-  const [isUploadOpen, setIsUploadOpen] = useState(false)
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [developmentMember, setDevelopmentMember] = useState(null)
-  const [isLoadingRecords, setIsLoadingRecords] = useState(false)
-  const [recordsError, setRecordsError] = useState('')
-  const [actionError, setActionError] = useState('')
-  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false)
-  const [reportAnalysis, setReportAnalysis] = useState({})
-  const [reportItemMenuOpen, setReportItemMenuOpen] = useState(null)
-  const isRealDataMode = Boolean(developmentMember)
-  const selectedReport = reports.find((report) => report.id === selectedReportId)
+  const isInvitationRoute = window.location.pathname === "/accept-invitation";
 
-  const getAnalysisState = useCallback((reportId) => {
-    return reportAnalysis[reportId] || { status: 'not-analyzed', data: null, error: null }
-  }, [reportAnalysis])
-
-  const getReportDisplayStatus = useCallback((report) => {
-    const analysisState = getAnalysisState(report.id)
-
-    if (analysisState.status === 'analyzing') {
-      return { label: 'Analyzing', className: 'analyzing' }
-    }
-
-    if (analysisState.status === 'analyzed') {
-      return { label: 'Analyzed', className: 'analyzed' }
-    }
-
-    return {
-      label: report.isRealRecord ? 'Available' : 'Pending',
-      className: report.isRealRecord ? 'available' : 'pending'
-    }
-  }, [getAnalysisState])
-
-  const visibleReports = useMemo(() => {
-    return reports.filter((report) => {
-      const matchesSearch = report.name.toLowerCase().includes(search.toLowerCase())
-      if (!matchesSearch) return false
-
-      if (filter === 'All') return true
-
-      // Filter based on display status (which includes analysis state)
-      const displayStatus = getReportDisplayStatus(report)
-      return displayStatus.label === filter
-    })
-  }, [filter, reports, search, getReportDisplayStatus])
-  const loadRealRecords = useCallback(async (member) => { if (!member) return; setIsLoadingRecords(true); setRecordsError(''); try { const data = await fetchMedicalRecords(member.id); const mapped = data.map((record) => mapMedicalRecord(record, member)); setReports(mapped); setSelectedReportId(mapped[0]?.id || null) } catch (loadError) { setReports([]); setSelectedReportId(null); setRecordsError(loadError.message || 'Unable to load medical reports.') } finally { setIsLoadingRecords(false) } }, [])
-  const handleDevelopmentMemberChange = useCallback((member) => { setDevelopmentMember(member); if (!member) { setReports(mockReports); setSelectedReportId(1); setRecordsError(''); setActionError(''); return }; void loadRealRecords(member) }, [loadRealRecords])
-
-  function addMockReport(report) { const newReport = { ...report, id: Date.now() }; setReports((current) => [newReport, ...current]); setSelectedReportId(newReport.id); setActiveTab('Report') }
-  async function handleRealUpload(details) { await uploadMedicalRecord({ familyMemberId: developmentMember.id, ...details }); await loadRealRecords(developmentMember) }
-  async function handleOpenReport() { if (!selectedReport?.isRealRecord) return; setActionError(''); try { const signedUrl = await getMedicalRecordSignedUrl(selectedReport.file_url); window.open(signedUrl, '_blank', 'noopener,noreferrer') } catch (openError) { setActionError(openError.message || 'Unable to open this medical report.') } finally { setIsActionMenuOpen(false) } }
-  async function handleDeleteReport() { if (!selectedReport?.isRealRecord || !window.confirm(`Delete "${selectedReport.name}"? This removes the report and its private file.`)) return; setActionError(''); try { await deleteMedicalRecord(selectedReport); setIsActionMenuOpen(false); await loadRealRecords(developmentMember) } catch (deleteError) { setActionError(deleteError.message || 'Unable to delete this medical report.') } }
-
-  async function handleAnalyzeReport(report) {
-    setReportAnalysis((prev) => ({
-      ...prev,
-      [report.id]: { status: 'analyzing', data: null, error: null }
-    }))
-
-    try {
-      const analysis = await analyzeMedicalReport(report)
-      setReportAnalysis((prev) => ({
-        ...prev,
-        [report.id]: { status: 'analyzed', data: analysis, error: null }
-      }))
-      setActiveTab('AI Summary')
-    } catch (error) {
-      setReportAnalysis((prev) => ({
-        ...prev,
-        [report.id]: { status: 'error', data: null, error: error.message }
-      }))
-    }
+  if (isInvitationRoute) {
+    return (
+      <AcceptInvitation
+        onBack={async () => {
+          await supabase.auth.signOut();
+          window.history.replaceState({}, "", "/");
+          window.location.reload();
+        }}
+      />
+    );
   }
 
-  function handleReportItemMenu(event, reportId) {
-    event.stopPropagation()
-    setReportItemMenuOpen(reportItemMenuOpen === reportId ? null : reportId)
+  return <DashboardApp />;
+}
+
+function DashboardApp() {
+  const [user, setUser] = useState(null);
+  const [familyId, setFamilyId] = useState(null);
+  const [familyName, setFamilyName] = useState("");
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeModule, setActiveModule] = useState("dashboard");
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [dashboardMedicalReports, setDashboardMedicalReports] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [membersError, setMembersError] = useState("");
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showCreateFamily, setShowCreateFamily] = useState(false);
+
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
+  const [deletingMember, setDeletingMember] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const [newName, setNewName] = useState("");
+  const [newRelation, setNewRelation] = useState("");
+  const [newRole, setNewRole] = useState("child");
+  const [newEmail, setNewEmail] = useState("");
+  const [newAvatar, setNewAvatar] = useState("");
+
+  const [editName, setEditName] = useState("");
+  const [editRelation, setEditRelation] = useState("");
+  const [editAvatar, setEditAvatar] = useState("");
+  const [editDob, setEditDob] = useState("");
+  const [editGender, setEditGender] = useState("");
+  const [editBlood, setEditBlood] = useState("");
+  const [editAllergy, setEditAllergy] = useState("");
+  const [editConditions, setEditConditions] = useState("");
+  const [editMedications, setEditMedications] = useState("");
+  const [editEmergencyContact, setEditEmergencyContact] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const refreshDashboardMedicalReports = async (member = selectedMember) => {
+  if (!member) {
+    setDashboardMedicalReports([]);
+    return;
   }
 
-  function handleCloseReportItemMenu() {
-    setReportItemMenuOpen(null)
+  try {
+    const records = await fetchMedicalRecords(member.id);
+    setDashboardMedicalReports(records || []);
+  } catch (error) {
+    console.warn(
+      "Unable to load dashboard medical reports:",
+      error
+    );
+    setDashboardMedicalReports([]);
   }
+};
 
-  // Close menu when clicking outside
   useEffect(() => {
-    if (reportItemMenuOpen === null) return
+    let mounted = true;
 
-    function handleClickOutside(event) {
-      const menu = document.querySelector('.report-item-menu')
-      if (menu && !menu.contains(event.target)) {
-        setReportItemMenuOpen(null)
+    async function loadSession() {
+      setLoadingMembers(true);
+      setMembersError("");
+
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        if (mounted) {
+          setMembersError(error.message);
+          setLoadingMembers(false);
+        }
+        return;
+      }
+
+      if (!session?.user) {
+        if (mounted) {
+          setUser(null);
+          setFamilyId(null);
+          setFamilyName("");
+          setFamilyMembers([]);
+          setSelectedMember(null);
+          setIsAdmin(false);
+          setLoadingMembers(false);
+          setAuthLoading(false);
+        }
+        return;
+      }
+
+      if (mounted) {
+        setUser(session.user);
+      }
+
+      await loadFamilyMembers(session.user.id);
+
+      if (mounted) {
+        setAuthLoading(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [reportItemMenuOpen])
+    async function handleAuthChange(session) {
+      if (!mounted) return;
 
-  return <div className="app-shell"><aside className="sidebar"><div className="brand"><span className="brand-mark">+</span><span>Health<span>Hub</span></span></div><nav className="main-nav" aria-label="Primary navigation">{navigation.map((item) => <button className={item === 'Medical Reports' ? 'active' : ''} key={item}><Icon name={{ Overview: 'home', 'Medical Reports': 'report', Prescriptions: 'pill', Timeline: 'timeline', 'AI Health': 'spark', Reminders: 'bell', 'Emergency Card': 'card', Settings: 'settings' }[item]} />{item}</button>)}</nav><div className="members"><p>Family Members</p>{familyMembers.map(([name, relation, initial]) => <button key={name} className={`member ${name === 'Sunita' ? 'selected' : ''}`}><span className="avatar">{initial}</span><span><strong>{name}</strong><small>{relation}</small></span>{name === 'Sunita' && <span className="member-check"><Icon name="check" size={13} /></span>}</button>)}</div><div className="sidebar-profile"><span className="avatar avatar--profile">AS</span><span><strong>Avinandan</strong><small>Family admin</small></span><Icon name="more" /></div></aside><main className="main-content"><header className="top-header"><div className="header-title"><button className="icon-button" aria-label="Go back"><Icon name="arrow" /></button><div><h1>Medical Reports</h1><p>All your medical reports in one place</p></div></div><div className="header-actions"><button className="profile-switch"><span className="avatar">S</span>Switch Profile</button><button className="icon-button notification-button" onClick={() => setIsNotificationsOpen((current) => !current)} aria-label="Notifications"><Icon name="bell" />{isNotificationsOpen && <span className="notification-popover">You&apos;re all caught up.</span>}</button></div></header><DevelopmentTestBridge onMemberChange={handleDevelopmentMemberChange} /><section className="toolbar"><label className="search-box"><Icon name="search" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search reports" /></label><div className="toolbar-actions"><button className="toolbar-button" onClick={() => setFilter((current) => current === 'All' ? 'Analyzed' : current === 'Analyzed' ? 'Pending' : 'All')}><Icon name="filter" />Filter: {filter}</button><button className="toolbar-button"><Icon name="sort" />Newest</button><button className="primary-button upload-trigger" onClick={() => setIsUploadOpen(true)}><Icon name="upload" />Upload Report</button></div></section>{isRealDataMode && <p className="real-data-mode">Development/Test mode · showing only real reports for {developmentMember.name}.</p>}{recordsError && <p className="real-data-error" role="alert">{recordsError}</p>}{actionError && <p className="real-data-error" role="alert">{actionError}</p>}<div className="workspace"><section className="reports-column"><div className="reports-heading"><div><p className="eyebrow">{isRealDataMode ? `${developmentMember.name}'s records` : "Sunita's records"}</p><h2>All Reports <span>{isLoadingRecords ? '…' : visibleReports.length}</span></h2></div></div>{isLoadingRecords ? <div className="empty-state"><p>Loading medical reports…</p></div> : visibleReports.length ? <div className="report-list">{visibleReports.map((report) => { const displayStatus = getReportDisplayStatus(report); return <div className="report-item-wrapper" key={report.id}><button className={`report-item ${selectedReportId === report.id ? 'selected' : ''}`} onClick={() => { setSelectedReportId(report.id); if (!selectedReportId) setActiveTab('Report'); setIsActionMenuOpen(false); setReportItemMenuOpen(null) }}><span className="report-document"><Icon name="document" /></span><span className="report-meta"><strong>{report.name}</strong><small>{report.date}</small></span><span className={`status ${displayStatus.className}`}>{displayStatus.label === 'Analyzed' && <Icon name="check" size={12} />}{displayStatus.label}</span><span className="report-more" onClick={(e) => handleReportItemMenu(e, report.id)}><Icon name="more" /></span></button>{reportItemMenuOpen === report.id && <div className="report-item-menu" onMouseLeave={handleCloseReportItemMenu}><button type="button" onClick={(e) => { e.stopPropagation(); handleAnalyzeReport(report); setReportItemMenuOpen(null) }}>{getAnalysisState(report.id).status === 'analyzed' ? 'Re-analyze report' : 'Analyze report'}</button>{report.isRealRecord && <button type="button" onClick={(e) => { e.stopPropagation(); setReportItemMenuOpen(null); handleDeleteReport() }}>Delete report</button>}</div>}</div> })}</div> : <EmptyState />}</section><section className="detail-panel">{selectedReport ? <><div className="detail-heading"><div><p className="eyebrow">{selectedReport.type}</p><h2>{selectedReport.name}</h2><p>{selectedReport.date} <span>•</span> Uploaded by {selectedReport.uploadedBy}</p></div><div className="report-actions-wrap"><button className="icon-button" aria-label="Report actions" onClick={() => setIsActionMenuOpen((current) => !current)}><Icon name="more" /></button>{isActionMenuOpen && <div className="report-actions-menu">{selectedReport.isRealRecord && <button type="button" onClick={handleOpenReport}>Open private report</button>}{getAnalysisState(selectedReport.id).status !== 'analyzing' && <button type="button" onClick={() => { handleAnalyzeReport(selectedReport); setIsActionMenuOpen(false) }}>{getAnalysisState(selectedReport.id).status === 'analyzed' ? 'Re-analyze report' : 'Analyze report'}</button>}{selectedReport.isRealRecord && <button type="button" onClick={handleDeleteReport}>Delete report</button>}</div>}</div></div><div className="tabs" role="tablist">{['Report', 'AI Summary', 'Chart View', 'History'].map((tab) => <button key={tab} role="tab" aria-selected={activeTab === tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab}</button>)}</div><div className="tab-content">{activeTab === 'Report' && <>{getAnalysisState(selectedReport.id).status === 'not-analyzed' && <div className="analyze-action-bar"><button className="primary-button analyze-trigger" onClick={() => handleAnalyzeReport(selectedReport)}><Icon name="spark" />Analyze Report with AI</button></div>}{getAnalysisState(selectedReport.id).status === 'analyzing' && <div className="analyze-action-bar"><div className="analyze-status analyzing"><span className="analyze-spinner" />Analyzing report with AI...</div></div>}{getAnalysisState(selectedReport.id).status === 'analyzed' && <div className="analyze-action-bar"><div className="analyze-status analyzed"><Icon name="check" />Analysis complete. View in AI Summary tab.</div></div>}<ReportPreview report={selectedReport} /></>}{activeTab === 'AI Summary' && <AiSummary report={selectedReport} analysisState={getAnalysisState(selectedReport.id)} onAnalyze={handleAnalyzeReport} />}{activeTab === 'Chart View' && <ChartView />}{activeTab === 'History' && <div className="history-view"><h3>Report history</h3><div><span>{selectedReport.date}</span><p><strong>{selectedReport.name} uploaded</strong>{selectedReport.uploadedBy}&apos;s report was added to HealthHub.</p></div><div><span>{selectedReport.date}</span><p><strong>{selectedReport.isRealRecord ? 'Secure report available' : 'Analysis completed'}</strong>{selectedReport.isRealRecord ? 'The private report can be opened through a temporary signed link.' : 'A mock informational summary is available.'}</p></div></div>}</div></> : <EmptyState />}</section></div></main>{isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} onUploaded={addMockReport} onUpload={isRealDataMode ? handleRealUpload : undefined} isRealDataMode={isRealDataMode} />}
+      setUser(session?.user ?? null);
 
-<AIChatbot />
-</div>
+      if (session?.user) {
+        await loadFamilyMembers(session.user.id);
+      } else {
+        setFamilyId(null);
+        setFamilyName("");
+        setFamilyMembers([]);
+        setSelectedMember(null);
+        setIsAdmin(false);
+        setLoadingMembers(false);
+      }
+
+      setAuthLoading(false);
+    }
+
+    loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void handleAuthChange(session);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDashboardMedicalReports() {
+      if (!selectedMember) {
+        if (!cancelled) setDashboardMedicalReports([]);
+        return;
+      }
+
+      try {
+        const records = await fetchMedicalRecords(selectedMember.id);
+        if (!cancelled) setDashboardMedicalReports(records || []);
+      } catch (error) {
+        console.warn("Unable to load dashboard medical reports:", error);
+        if (!cancelled) setDashboardMedicalReports([]);
+      }
+    }
+
+    void loadDashboardMedicalReports();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMember, activeModule]);
+
+  async function loadFamilyMembers(userId) {
+    setLoadingMembers(true);
+    setMembersError("");
+
+    try {
+      // Admin/owner: find the family through families.owner_id.
+      const { data: ownedFamily, error: ownedFamilyError } = await supabase
+        .from("families")
+        .select("id, owner_id, name")
+        .eq("owner_id", userId)
+        .maybeSingle();
+
+      if (ownedFamilyError) throw ownedFamilyError;
+
+      let resolvedFamilyId = ownedFamily?.id || null;
+      let resolvedIsAdmin = !!ownedFamily;
+
+      // Invited adult: find the family through their family_members.user_id.
+      if (!resolvedFamilyId) {
+        const { data: linkedMember, error: linkedMemberError } =
+          await supabase
+            .from("family_members")
+            .select("id, family_id, role")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+        if (linkedMemberError) throw linkedMemberError;
+
+        if (linkedMember) {
+          resolvedFamilyId = linkedMember.family_id;
+          resolvedIsAdmin = linkedMember.role === "admin";
+        }
+      }
+
+      if (!resolvedFamilyId) {
+        // There is no valid family context. Do not show the old blank
+        // "Your family starts here" screen. Return the user to Login instead.
+        await supabase.auth.signOut();
+        setUser(null);
+        setFamilyId(null);
+        setFamilyName("");
+        setFamilyMembers([]);
+        setSelectedMember(null);
+        setIsAdmin(false);
+        return;
+      }
+
+      let resolvedFamilyName = ownedFamily?.name || "Your Family";
+
+      if (!ownedFamily) {
+        const { data: linkedFamily, error: linkedFamilyError } =
+          await supabase
+            .from("families")
+            .select("id, name")
+            .eq("id", resolvedFamilyId)
+            .maybeSingle();
+
+        if (linkedFamilyError) throw linkedFamilyError;
+        resolvedFamilyName = linkedFamily?.name || "Your Family";
+      }
+
+      setFamilyId(resolvedFamilyId);
+      setFamilyName(resolvedFamilyName);
+      setIsAdmin(resolvedIsAdmin);
+
+      const { data: members, error: membersError } = await supabase
+        .from("family_members")
+        .select(
+          "id, family_id, name, date_of_birth, gender, relation, role, email, avatar, user_id, created_at"
+        )
+        .eq("family_id", resolvedFamilyId)
+        .order("created_at", { ascending: true });
+
+      if (membersError) throw membersError;
+
+      const memberIds = (members || []).map((member) => member.id);
+
+      let healthInfo = [];
+
+      if (memberIds.length > 0) {
+        const { data, error: healthError } = await supabase
+          .from("health_information")
+          .select(
+            "family_member_id, blood_group, allergies, existing_conditions, current_medications, emergency_contact"
+          )
+          .in("family_member_id", memberIds);
+
+        if (healthError) {
+          console.warn("Health information could not be loaded; family cards will still be shown.", healthError);
+        } else {
+          healthInfo = data || [];
+        }
+      }
+
+      const healthMap = new Map(
+        healthInfo.map((info) => [info.family_member_id, info])
+      );
+
+      const mappedMembers = (members || []).map((member) => {
+        const health = healthMap.get(member.id);
+
+        return {
+          ...member,
+          relation: member.relation || "Other",
+          avatar: member.avatar || getAvatarForRelation(member.relation),
+          blood: health?.blood_group || "Not added",
+          allergy: health?.allergies || "Not added",
+          checkup: "Not scheduled",
+          existingConditions: health?.existing_conditions || "",
+          currentMedications: health?.current_medications || "",
+          emergencyContact: health?.emergency_contact || "",
+        };
+      });
+
+      setFamilyMembers(mappedMembers);
+
+      setSelectedMember((current) => {
+        if (!current) return null;
+        return (
+          mappedMembers.find((member) => member.id === current.id) || null
+        );
+      });
+    } catch (error) {
+      console.error("Unable to load family members:", error);
+      setFamilyMembers([]);
+      setSelectedMember(null);
+      setMembersError(
+        error.message || "Unable to load your family members."
+      );
+    } finally {
+      setLoadingMembers(false);
+    }
+  }
+
+  async function addMember(e) {
+    e.preventDefault();
+    if (addingMember) return;
+
+    if (!user || !familyId) {
+      setMembersError("We couldn't find your family. Please refresh and try again.");
+      return;
+    }
+
+    if (!isAdmin) {
+      setMembersError("Only a family admin can add members.");
+      return;
+    }
+
+    const trimmedName = newName.trim();
+    const trimmedRelation = newRelation.trim();
+    const normalizedEmail = newEmail.trim().toLowerCase();
+
+    if (!trimmedName || !trimmedRelation) {
+      setMembersError("Please enter the member's name and relationship.");
+      return;
+    }
+
+    if (newRole === "adult") {
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!normalizedEmail || !emailPattern.test(normalizedEmail)) {
+        setMembersError("Please enter a valid email address for the adult member.");
+        return;
+      }
+    }
+
+    if (!newAvatar) {
+      setMembersError("Please choose an avatar for the family member.");
+      return;
+    }
+
+    setMembersError("");
+    setSuccessMessage("");
+    setAddingMember(true);
+
+    let createdMember = null;
+
+    try {
+      // One email can only have one active or pending family profile.
+      if (newRole === "adult") {
+        const { data: existingFamilyMember, error: existingMemberError } =
+          await supabase
+            .from("family_members")
+            .select("id, name, email, user_id")
+            .eq("family_id", familyId)
+            .ilike("email", normalizedEmail)
+            .maybeSingle();
+
+        if (existingMemberError) throw existingMemberError;
+
+        if (existingFamilyMember) {
+          if (existingFamilyMember.user_id) {
+            throw new Error("This email already belongs to an active family member. Ask them to sign in instead.");
+          }
+          throw new Error("An invitation is already pending for this email. Ask the member to check their inbox.");
+        }
+      }
+
+      // Create the visible card first with user_id = null. For an adult this
+      // is only a PENDING card until the invitation is accepted.
+      const { data: member, error: memberError } = await supabase
+        .from("family_members")
+        .insert({
+          family_id: familyId,
+          name: trimmedName,
+          relation: trimmedRelation,
+          role: newRole,
+          email: newRole === "adult" ? normalizedEmail : null,
+          avatar: newAvatar,
+          user_id: null,
+        })
+        .select("id, family_id, name, date_of_birth, gender, relation, role, email, avatar, user_id, created_at")
+        .single();
+
+      if (memberError) throw memberError;
+      createdMember = member;
+
+      if (newRole === "adult") {
+        const { data: invitationData, error: invitationError } =
+          await supabase.functions.invoke("invite-family-member", {
+            body: {
+              familyId,
+              familyMemberId: member.id,
+              email: normalizedEmail,
+              name: trimmedName,
+              relation: trimmedRelation,
+            },
+          });
+
+        if (invitationError) {
+          let invitationMessage = invitationError.message;
+          try {
+            const response = invitationError.context;
+            if (response && typeof response.clone === "function") {
+              const payload = await response.clone().json();
+              if (payload?.error) invitationMessage = payload.error;
+            }
+          } catch {
+            // Keep the SDK message if the function response cannot be parsed.
+          }
+          throw new Error(invitationMessage || "We couldn't send the invitation.");
+        }
+
+        if (!invitationData?.success) {
+          throw new Error(invitationData?.error || "We couldn't send the invitation.");
+        }
+      }
+
+      const displayMember = {
+        ...member,
+        avatar: member.avatar || newAvatar,
+        blood: "Not added",
+        allergy: "Not added",
+        checkup: "Not scheduled",
+        existingConditions: "",
+        currentMedications: "",
+        emergencyContact: "",
+      };
+
+      setFamilyMembers((current) => [...current, displayMember]);
+
+      // NEVER open the new member's profile automatically.
+      setSelectedMember(null);
+      setShowProfile(false);
+      setShowAddForm(false);
+      setMembersError("");
+
+      setNewName("");
+      setNewRelation("");
+      setNewRole("child");
+      setNewEmail("");
+      setNewAvatar("");
+
+      setSuccessMessage(
+        newRole === "adult"
+          ? `${trimmedName} was added. Invitation pending — the profile becomes active after acceptance.`
+          : `${trimmedName} was added to your family.`
+      );
+      window.setTimeout(() => setSuccessMessage(""), 5000);
+    } catch (error) {
+      console.error("Unable to add family member:", error);
+
+      // Roll back the pending card if the invitation could not be completed.
+      if (createdMember?.id) {
+        await supabase
+          .from("family_members")
+          .delete()
+          .eq("id", createdMember.id)
+          .eq("family_id", familyId);
+      }
+
+      setMembersError(error.message || "We couldn't add this family member. Please try again.");
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
+  async function deleteMember(member) {
+    if (!member || !familyId || !isAdmin || deletingMember) return;
+
+    if (member.user_id === user?.id) {
+      setMembersError("You cannot delete your own admin profile.");
+      return;
+    }
+
+    setMemberToDelete(member);
+    setMembersError("");
+  }
+
+  async function confirmDeleteMember() {
+    if (!memberToDelete || !familyId || !isAdmin || deletingMember) return;
+
+    setDeletingMember(true);
+    setMembersError("");
+
+    try {
+      // Remove any pending invitation first. For accepted members this is a no-op.
+      await supabase
+        .from("family_invitations")
+        .delete()
+        .eq("family_member_id", memberToDelete.id)
+        .eq("family_id", familyId);
+
+      const { error } = await supabase
+        .from("family_members")
+        .delete()
+        .eq("id", memberToDelete.id)
+        .eq("family_id", familyId);
+
+      if (error) throw error;
+
+      setFamilyMembers((current) =>
+        current.filter((item) => item.id !== memberToDelete.id)
+      );
+
+      if (selectedMember?.id === memberToDelete.id) {
+        setSelectedMember(null);
+        setActiveModule("dashboard");
+      }
+
+      setSuccessMessage(`${memberToDelete.name || "Member"} was removed from the family.`);
+      setMemberToDelete(null);
+    } catch (error) {
+      console.error("Unable to delete family member:", error);
+      setMembersError(
+        error.message || "We couldn't remove this family member."
+      );
+    } finally {
+      setDeletingMember(false);
+    }
+  }
+
+  function openEditForm() {
+    if (!selectedMember) return;
+
+    if (!isAdmin && selectedMember.user_id !== user?.id) {
+      setProfileError("You can edit your own profile only.");
+      return;
+    }
+
+    setEditName(selectedMember.name || "");
+    setEditRelation(selectedMember.relation || "");
+    setEditAvatar(selectedMember.avatar || getAvatarForRelation(selectedMember.relation));
+    setEditDob(selectedMember.date_of_birth || "");
+    setEditGender(selectedMember.gender || "");
+    setEditBlood(
+      selectedMember.blood === "Not added" ? "" : selectedMember.blood || ""
+    );
+    setEditAllergy(
+      selectedMember.allergy === "Not added" ? "" : selectedMember.allergy || ""
+    );
+    setEditConditions(selectedMember.existingConditions || "");
+    setEditMedications(selectedMember.currentMedications || "");
+    setEditEmergencyContact(selectedMember.emergencyContact || "");
+    setProfileError("");
+    setShowProfile(true);
+  }
+
+  async function saveEdit(e) {
+    e.preventDefault();
+
+    if (!selectedMember || !familyId) return;
+
+    if (!editName.trim() || !editRelation.trim()) {
+      setProfileError("Name and relation are required.");
+      return;
+    }
+
+    setProfileSaving(true);
+    setProfileError("");
+
+    try {
+      const { data: updatedMember, error: memberError } = await supabase
+        .from("family_members")
+        .update({
+          name: editName.trim(),
+          relation: editRelation.trim(),
+          avatar: editAvatar || getAvatarForRelation(editRelation),
+          date_of_birth: editDob || null,
+          gender: editGender || null,
+          avatar: editAvatar || getAvatarForRelation(editRelation),
+        })
+        .eq("id", selectedMember.id)
+        .eq("family_id", familyId)
+        .select()
+        .single();
+
+      if (memberError) throw memberError;
+
+      const { data: existingHealth, error: healthLookupError } = await supabase
+        .from("health_information")
+        .select("family_member_id")
+        .eq("family_member_id", selectedMember.id)
+        .maybeSingle();
+
+      if (healthLookupError) throw healthLookupError;
+
+      const healthPayload = {
+        family_member_id: selectedMember.id,
+        blood_group: editBlood.trim() || null,
+        allergies: editAllergy.trim() || null,
+        existing_conditions: editConditions.trim() || null,
+        current_medications: editMedications.trim() || null,
+        emergency_contact: editEmergencyContact.trim() || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existingHealth) {
+        const { error: healthUpdateError } = await supabase
+          .from("health_information")
+          .update(healthPayload)
+          .eq("family_member_id", selectedMember.id);
+
+        if (healthUpdateError) throw healthUpdateError;
+      } else {
+        const { error: healthInsertError } = await supabase
+          .from("health_information")
+          .insert(healthPayload);
+
+        if (healthInsertError) throw healthInsertError;
+      }
+
+      const updated = {
+        ...selectedMember,
+        ...updatedMember,
+        avatar: editAvatar || getAvatarForRelation(editRelation),
+        blood: editBlood.trim() || "Not added",
+        allergy: editAllergy.trim() || "Not added",
+        existingConditions: editConditions.trim(),
+        currentMedications: editMedications.trim(),
+        emergencyContact: editEmergencyContact.trim(),
+        checkup: "Not scheduled",
+      };
+
+      setFamilyMembers((current) =>
+        current.map((member) =>
+          member.id === selectedMember.id ? updated : member
+        )
+      );
+
+      setSelectedMember(updated);
+      setShowProfile(false);
+    } catch (error) {
+      console.error("Unable to save family profile:", error);
+      setProfileError(
+        error.message || "Unable to save this family profile."
+      );
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  // CREATE FAMILY
+  if (showCreateFamily) {
+    return (
+      <CreateFamily
+        onBack={async () => {
+          await supabase.auth.signOut();
+          setShowCreateFamily(false);
+          setUser(null);
+          setFamilyId(null);
+          setFamilyName("");
+          setFamilyMembers([]);
+          setSelectedMember(null);
+          setActiveModule("dashboard");
+          setIsAdmin(false);
+          setMembersError("");
+        }}
+        onCreated={async ({ user: createdUser, family, member }) => {
+          setShowCreateFamily(false);
+          setUser(createdUser);
+          setFamilyId(family.id);
+          setFamilyName(family.name || "Your Family");
+          setSelectedMember(null);
+          setActiveModule("dashboard");
+          setMembersError("");
+          setSuccessMessage("Your family is ready. You can now add members from the family page.");
+          setShowAddForm(false);
+
+          // Load the Admin card first. The user can choose Add Member from the family page.
+          await loadFamilyMembers(createdUser.id);
+        }}
+      />
+    );
+  }
+
+  // AUTHENTICATION
+  if (authLoading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          background: "#f8f9f6",
+          color: "#4b5b50",
+          fontFamily: "inherit",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: "32px", marginBottom: "10px" }}>H</div>
+          <strong>Loading HealthHub...</strong>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Login
+        onLogin={async (loggedInUser) => {
+          setUser(loggedInUser);
+          await loadFamilyMembers(loggedInUser.id);
+        }}
+        onCreateFamily={() => {
+          setShowCreateFamily(true);
+        }}
+      />
+    );
+  }
+
+  // DASHBOARD
+  if (selectedMember) {
+    return (
+  <div className="app">
+    <header className="header">
+      <div className="brand">
+        <div className="logo">H</div>
+        <div>
+          <h2>HealthHub</h2>
+          <p>Your Family, Your Health</p>
+        </div>
+      </div>
+
+      <button
+        className="switch-account"
+        onClick={() => {
+          setShowProfile(false);
+          setActiveModule("dashboard");
+          setSelectedMember(null);
+        }}
+      >
+        ⇄ Switch Profile
+      </button>
+    </header>
+
+    <div className="dashboard-layout">
+
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+
+        <div className="sidebar-section">
+          <button
+            type="button"
+            className={`nav-item ${
+              activeModule === "dashboard" ? "active" : ""
+            }`}
+            onClick={() => {
+              setActiveModule("dashboard");
+              setShowProfile(false);
+            }}
+          >
+            🏠 Overview
+          </button>
+
+          <button
+            type="button"
+            className={`nav-item ${
+              activeModule === "medical-records" ? "active" : ""
+            }`}
+            onClick={() => {
+              setActiveModule("medical-records");
+              setShowProfile(false);
+            }}
+          >
+            📄 Medical Reports
+          </button>
+          <button className="nav-item">💊 Prescriptions</button>
+          <button className="nav-item">🕐 Timeline</button>
+          <button className="nav-item">🔔 Reminders</button>
+          <button className="nav-item">🚨 Emergency Card</button>
+          <button className="nav-item">✨ Health AI</button>
+          <button className="nav-item">⚙️ Settings</button>
+        </div>
+
+        <div className="sidebar-family">
+          <p>FAMILY MEMBERS</p>
+
+          {familyMembers.map((member) => {
+            const isPending = member.role === "adult" && !member.user_id;
+            return (
+            <button
+              key={member.id}
+              className={`family-mini ${
+                member.id === selectedMember.id ? "current" : ""
+              } ${isPending ? "family-mini-pending" : ""}`}
+              disabled={isPending}
+              onClick={() => {
+                if (!isPending) {
+                  setSelectedMember(member);
+                  setShowProfile(false);
+                }
+              }}
+            >
+              <span>{member.avatar}</span>
+              <span>
+                {member.name}
+                <small>
+                  {member.relation}
+                  {member.role === "adult" && !member.user_id ? " • Invitation pending" : ""}
+                </small>
+              </span>
+            </button>
+            );
+          })}
+        </div>
+
+      </aside>
+
+      {/* MAIN DASHBOARD */}
+      <main className="dashboard-main">
+
+        {membersError && (
+          <div className="healthhub-alert healthhub-alert-error" role="alert">
+            <div className="healthhub-alert-icon">!</div>
+            <div>
+              <strong>Couldn't complete that action</strong>
+              <p>{membersError}</p>
+            </div>
+            <button type="button" onClick={() => setMembersError("")} aria-label="Dismiss error">×</button>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="healthhub-alert healthhub-alert-success" role="status">
+            <div className="healthhub-alert-icon">✓</div>
+            <div>
+              <strong>Done</strong>
+              <p>{successMessage}</p>
+            </div>
+            <button type="button" onClick={() => setSuccessMessage("")} aria-label="Dismiss message">×</button>
+          </div>
+        )}
+
+        {activeModule === "medical-records" ? (
+          <MedicalRecordsPage
+            selectedMember={selectedMember}
+            onRecordsChanged={() =>
+              refreshDashboardMedicalReports(selectedMember)
+            }
+          />
+        ) : (
+          <>
+            {/* PROFILE HEADER */}
+        <div className="dashboard-profile-header">
+
+          <div className="dashboard-person">
+            <div className="dashboard-avatar">
+              {selectedMember.avatar}
+            </div>
+
+            <div>
+              <h1>{selectedMember.name}</h1>
+              <p>
+                {selectedMember.relation} • {familyName || "Family Health Profile"}
+              </p>
+            </div>
+          </div>
+
+          <div className="profile-actions">
+            <button
+              className="profile-details-button"
+              onClick={openEditForm}
+              disabled={selectedMember.role === "adult" && !selectedMember.user_id}
+              title={selectedMember.role === "adult" && !selectedMember.user_id ? "Available after the invitation is accepted" : "View or edit profile"}
+            >
+              {selectedMember.role === "adult" && !selectedMember.user_id ? "Profile pending" : "View / Edit Profile"}
+            </button>
+
+            {isAdmin && selectedMember.user_id !== user?.id && (
+              <button
+                type="button"
+                className="delete-member-button"
+                onClick={() => deleteMember(selectedMember)}
+              >
+                Delete Member
+              </button>
+            )}
+
+            <div className={`status ${!selectedMember.user_id && selectedMember.role === "adult" ? "status-pending" : ""}`}>
+              {selectedMember.role === "adult" && !selectedMember.user_id
+                ? "○ Invitation pending"
+                : `● Health profile active${isAdmin && selectedMember.user_id === user?.id ? " • Admin" : ""}`}
+            </div>
+          </div>
+
+        </div>
+
+        {selectedMember.role === "adult" && !selectedMember.user_id && (
+          <div className="pending-profile-panel">
+            <div className="pending-profile-icon">✉</div>
+            <div>
+              <strong>Invitation pending</strong>
+              <p>
+                {selectedMember.email || "This member"} has not accepted the invitation yet.
+                Their health profile will become active after they accept and set their password.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* TOP HEALTH CARDS */}
+        <div className="health-cards">
+
+          <div className="health-card">
+            <span>🩸 BLOOD TYPE</span>
+            <strong>{selectedMember.blood}</strong>
+          </div>
+
+          <div className="health-card">
+            <span>⚠️ ALLERGIES</span>
+            <strong>{selectedMember.allergy}</strong>
+          </div>
+
+          <div className="health-card">
+            <span>📅 NEXT CHECKUP</span>
+            <strong>{selectedMember.checkup}</strong>
+          </div>
+
+          <div className="emergency-card">
+            <span>🚨 EMERGENCY HEALTH CARD</span>
+            <h3>Emergency information</h3>
+            <p>Keep important health information accessible.</p>
+            <button>View Full Card</button>
+          </div>
+
+        </div>
+
+        {/* MAIN CONTENT GRID */}
+        <div className="dashboard-grid">
+
+          {/* AI SUMMARY */}
+          <section className="panel ai-panel">
+            <div className="panel-title">
+              <h2>✨ AI Health Summary</h2>
+              <span>Health AI</span>
+            </div>
+
+            <div className="ai-status">
+              <div className="ai-circle">♥</div>
+              <div>
+                <strong>Overall Health</strong>
+                <p>Your health information looks generally stable.</p>
+              </div>
+            </div>
+
+            <div className="attention">
+              ⚠️ <strong>Attention Needed</strong>
+              <p>No major health concerns currently added.</p>
+            </div>
+
+            <button className="ai-button">
+              💬 Chat with Health AI →
+            </button>
+          </section>
+
+          {/* MEDICAL REPORTS */}
+          <section className="panel">
+
+            <div className="panel-title">
+              <h2>📄 Recent Medical Reports</h2>
+
+              <button
+                type="button"
+                className="panel-link-button"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#66806b",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  font: "inherit",
+                }}
+                onClick={() => setActiveModule("medical-records")}
+              >
+                View All
+              </button>
+            </div>
+
+            {dashboardMedicalReports.length > 0 ? (
+              dashboardMedicalReports.slice(0, 3).map((report) => (
+                <button
+                  type="button"
+                  key={report.id}
+                  className="report dashboard-report-button"
+                  style={{
+                    width: "100%",
+                    border: "0",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    font: "inherit",
+                    background: "transparent",
+                  }}
+                  onClick={() => setActiveModule("medical-records")}
+                >
+                  <span>🧪</span>
+                  <div>
+                    <strong>{report.title}</strong>
+                    <p>
+                      {report.record_type ||
+                        report.category ||
+                        "Medical report"}
+                      {report.record_date
+                        ? ` • ${new Intl.DateTimeFormat("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }).format(
+                            new Date(`${report.record_date}T00:00:00`)
+                          )}`
+                        : ""}
+                    </p>
+                  </div>
+                  <b>›</b>
+                </button>
+              ))
+            ) : (
+              <div className="dashboard-empty-reports">
+                <strong>No medical reports yet</strong>
+                <p>
+                  Upload a report from Medical Reports to see it here.
+                </p>
+              </div>
+            )}
+
+          </section>
+
+          {/* PRESCRIPTIONS */}
+          <section className="panel">
+
+            <div className="panel-title">
+              <h2>💊 Recent Prescriptions</h2>
+              <span>View All</span>
+            </div>
+
+            <div className="report">
+              <span>💊</span>
+              <div>
+                <strong>Vitamin D</strong>
+                <p>Daily supplement</p>
+              </div>
+              <b>›</b>
+            </div>
+
+            <div className="report">
+              <span>💊</span>
+              <div>
+                <strong>Calcium Tablet</strong>
+                <p>As prescribed</p>
+              </div>
+              <b>›</b>
+            </div>
+
+          </section>
+
+          {/* TIMELINE */}
+          <section className="panel">
+
+            <div className="panel-title">
+              <h2>🕐 Health Timeline</h2>
+              <span>View Full Timeline</span>
+            </div>
+
+            <div className="timeline-item">
+              <strong>Feb 24, 2025</strong>
+              <p>Vitamin D test completed</p>
+            </div>
+
+            <div className="timeline-item">
+              <strong>Jan 22, 2025</strong>
+              <p>CBC blood report added</p>
+            </div>
+
+            <div className="timeline-item">
+              <strong>Jan 05, 2025</strong>
+              <p>ECG report added</p>
+            </div>
+
+          </section>
+
+          {/* REMINDERS */}
+          <section className="panel">
+
+            <div className="panel-title">
+              <h2>🔔 Upcoming Reminders</h2>
+              <span>View All</span>
+            </div>
+
+            <div className="reminder">
+              <span>💊</span>
+              <div>
+                <strong>Vitamin D</strong>
+                <p>Today • 9:00 AM</p>
+              </div>
+              <small>Today</small>
+            </div>
+
+            <div className="reminder">
+              <span>👁️</span>
+              <div>
+                <strong>Eye Checkup</strong>
+                <p>Next appointment</p>
+              </div>
+              <small>Upcoming</small>
+            </div>
+
+          </section>
+
+          {/* HEALTH AI CHAT */}
+          <section className="panel chat-panel">
+
+            <div className="panel-title">
+              <h2>💬 Health AI Chat</h2>
+              <span>↗</span>
+            </div>
+
+            <div className="chat-message">
+              <strong>✨ Hi {selectedMember.name}!</strong>
+              <p>
+                I'm your Health AI assistant. You can ask me questions
+                about your reports, medications or general health.
+              </p>
+            </div>
+
+            <div className="chat-input">
+              <span>Ask anything...</span>
+              <button>➤</button>
+            </div>
+
+          </section>
+
+        </div>
+
+        {showProfile && selectedMember && (
+          <div className="profile-modal-backdrop" onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setShowProfile(false);
+          }}>
+            <form className="profile-modal" onSubmit={saveEdit}>
+              <div className="profile-modal-header">
+                <div>
+                  <span className="profile-modal-kicker">FAMILY PROFILE</span>
+                  <h2>View / Edit Profile</h2>
+                  <p>
+                    Update {selectedMember.name}'s basic and health information.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="profile-modal-close"
+                  onClick={() => setShowProfile(false)}
+                  aria-label="Close profile"
+                >
+                  ×
+                </button>
+              </div>
+
+              {profileError && (
+                <div className="profile-modal-error" role="alert">
+                  ⚠ {profileError}
+                </div>
+              )}
+
+              <div className="profile-form-section">
+                <div className="profile-section-heading">
+                  <span className="profile-section-icon">👤</span>
+                  <div>
+                    <h3>Basic Information</h3>
+                    <p>Personal details for this family member.</p>
+                  </div>
+                </div>
+
+                <div className="profile-form-grid">
+                  <label className="profile-field">
+                    <span>Full Name</span>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Enter full name"
+                      required
+                    />
+                  </label>
+
+                  <label className="profile-field">
+                    <span>Relationship</span>
+                    <select
+                      value={editRelation}
+                      onChange={(e) => {
+                        setEditRelation(e.target.value);
+                        setEditAvatar(getAvatarForRelation(e.target.value));
+                      }}
+                      required
+                    >
+                      <option value="">Select relation</option>
+                      <option>Self</option>
+                      <option>Father</option>
+                      <option>Mother</option>
+                      <option>Brother</option>
+                      <option>Sister</option>
+                      <option>Grandparent</option>
+                      <option>Child</option>
+                      <option>Spouse</option>
+                      <option>Other</option>
+                    </select>
+                  </label>
+
+                  <label className="profile-field">
+                    <span>Date of Birth</span>
+                    <input
+                      type="date"
+                      value={editDob}
+                      onChange={(e) => setEditDob(e.target.value)}
+                    />
+                  </label>
+
+                  <label className="profile-field">
+                    <span>Gender</span>
+                    <select
+                      value={editGender}
+                      onChange={(e) => setEditGender(e.target.value)}
+                    >
+                      <option value="">Select gender</option>
+                      <option>Female</option>
+                      <option>Male</option>
+                      <option>Other</option>
+                      <option>Prefer not to say</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div className="profile-form-section">
+                <div className="profile-section-heading">
+                  <span className="profile-section-icon">🏥</span>
+                  <div>
+                    <h3>Health Information</h3>
+                    <p>Information used across the family health profile.</p>
+                  </div>
+                </div>
+
+                <div className="profile-form-grid">
+                  <label className="profile-field">
+                    <span>Blood Group</span>
+                    <input
+                      type="text"
+                      value={editBlood}
+                      onChange={(e) => setEditBlood(e.target.value)}
+                      placeholder="e.g. B+"
+                    />
+                  </label>
+
+                  <label className="profile-field">
+                    <span>Allergies</span>
+                    <input
+                      type="text"
+                      value={editAllergy}
+                      onChange={(e) => setEditAllergy(e.target.value)}
+                      placeholder="e.g. Peanuts"
+                    />
+                  </label>
+
+                  <label className="profile-field profile-field-full">
+                    <span>Existing Medical Conditions</span>
+                    <textarea
+                      rows="3"
+                      value={editConditions}
+                      onChange={(e) => setEditConditions(e.target.value)}
+                      placeholder="e.g. Diabetes, asthma, hypertension"
+                    />
+                  </label>
+
+                  <label className="profile-field profile-field-full">
+                    <span>Current Medications</span>
+                    <textarea
+                      rows="3"
+                      value={editMedications}
+                      onChange={(e) => setEditMedications(e.target.value)}
+                      placeholder="List current medicines"
+                    />
+                  </label>
+
+                  <label className="profile-field profile-field-full">
+                    <span>Emergency Contact</span>
+                    <input
+                      type="text"
+                      value={editEmergencyContact}
+                      onChange={(e) => setEditEmergencyContact(e.target.value)}
+                      placeholder="Name and phone number"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="profile-modal-footer">
+                <p>Changes are saved securely to your family profile.</p>
+                <div className="profile-modal-actions">
+                  <button
+                    type="button"
+                    className="profile-cancel-button"
+                    onClick={() => setShowProfile(false)}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="profile-save-button"
+                    disabled={profileSaving}
+                  >
+                    {profileSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <style>{`
+              .profile-modal-backdrop {
+                position: fixed;
+                inset: 0;
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 28px;
+                background: rgba(25, 38, 31, 0.55);
+                backdrop-filter: blur(4px);
+                overflow-y: auto;
+              }
+
+              .profile-modal {
+                width: min(780px, 100%);
+                max-height: calc(100vh - 56px);
+                overflow-y: auto;
+                margin: auto;
+                padding: 30px;
+                border: 1px solid #e3e9e4;
+                border-radius: 22px;
+                background: #ffffff;
+                box-shadow: 0 24px 70px rgba(20, 35, 27, 0.24);
+                color: #25352c;
+              }
+
+              .profile-modal-header {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 24px;
+                padding-bottom: 22px;
+                border-bottom: 1px solid #edf0ed;
+              }
+
+              .profile-modal-kicker {
+                display: inline-block;
+                margin-bottom: 8px;
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 1.2px;
+                color: #66806b;
+              }
+
+              .profile-modal-header h2 {
+                margin: 0;
+                font-size: 28px;
+                line-height: 1.15;
+                color: #24342b;
+              }
+
+              .profile-modal-header p {
+                margin: 8px 0 0;
+                color: #718078;
+                font-size: 14px;
+                line-height: 1.5;
+              }
+
+              .profile-modal-close {
+                flex: 0 0 auto;
+                width: 38px;
+                height: 38px;
+                border: 1px solid #e0e6e1;
+                border-radius: 50%;
+                background: #f8faf8;
+                color: #526158;
+                font-size: 24px;
+                line-height: 1;
+                cursor: pointer;
+                transition: 0.2s ease;
+              }
+
+              .profile-modal-close:hover {
+                background: #edf3ee;
+                transform: rotate(3deg);
+              }
+
+              .profile-modal-error {
+                margin-top: 18px;
+                padding: 12px 14px;
+                border: 1px solid #f0cccc;
+                border-radius: 12px;
+                background: #fff5f5;
+                color: #a23d3d;
+                font-size: 13px;
+              }
+
+              .profile-form-section {
+                margin-top: 24px;
+                padding: 20px;
+                border: 1px solid #e8eee9;
+                border-radius: 16px;
+                background: #fbfcfb;
+              }
+
+              .profile-section-heading {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 18px;
+              }
+
+              .profile-section-icon {
+                display: grid;
+                place-items: center;
+                width: 38px;
+                height: 38px;
+                border-radius: 11px;
+                background: #edf4ee;
+                font-size: 18px;
+              }
+
+              .profile-section-heading h3 {
+                margin: 0;
+                font-size: 16px;
+                color: #2d3e34;
+              }
+
+              .profile-section-heading p {
+                margin: 3px 0 0;
+                color: #7a8780;
+                font-size: 12px;
+              }
+
+              .profile-form-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+              }
+
+              .profile-field {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 7px !important;
+                min-width: 0;
+                color: #425149;
+                font-size: 13px;
+                font-weight: 650;
+              }
+
+              .profile-field-full {
+                grid-column: 1 / -1;
+              }
+
+              .profile-field input,
+              .profile-field select,
+              .profile-field textarea {
+                box-sizing: border-box;
+                width: 100% !important;
+                min-height: 44px;
+                margin: 0 !important;
+                padding: 11px 12px;
+                border: 1px solid #d8e0da !important;
+                border-radius: 10px !important;
+                background: #ffffff !important;
+                color: #26372d !important;
+                font: inherit;
+                font-size: 14px;
+                outline: none;
+                transition: border-color 0.2s ease, box-shadow 0.2s ease;
+              }
+
+              .profile-field textarea {
+                min-height: 92px;
+                resize: vertical;
+                line-height: 1.45;
+              }
+
+              .profile-field input::placeholder,
+              .profile-field textarea::placeholder {
+                color: #a0aaa4;
+              }
+
+              .profile-field input:focus,
+              .profile-field select:focus,
+              .profile-field textarea:focus {
+                border-color: #6a866f !important;
+                box-shadow: 0 0 0 3px rgba(106, 134, 111, 0.12);
+              }
+
+              .profile-modal-footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 20px;
+                margin-top: 24px;
+                padding-top: 20px;
+                border-top: 1px solid #edf0ed;
+              }
+
+              .profile-modal-footer p {
+                margin: 0;
+                color: #7c8881;
+                font-size: 12px;
+              }
+
+              .profile-modal-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-shrink: 0;
+              }
+
+              .profile-cancel-button,
+              .profile-save-button {
+                min-height: 44px;
+                padding: 0 20px;
+                border-radius: 10px;
+                font: inherit;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: 0.2s ease;
+              }
+
+              .profile-cancel-button {
+                border: 1px solid #d8e0da;
+                background: #ffffff;
+                color: #526158;
+              }
+
+              .profile-cancel-button:hover {
+                background: #f4f7f4;
+              }
+
+              .profile-save-button {
+                border: 1px solid #65806a;
+                background: #65806a;
+                color: #ffffff;
+                box-shadow: 0 5px 14px rgba(101, 128, 106, 0.18);
+              }
+
+              .profile-save-button:hover:not(:disabled) {
+                background: #58725e;
+                transform: translateY(-1px);
+              }
+
+              .profile-save-button:disabled {
+                opacity: 0.65;
+                cursor: not-allowed;
+              }
+
+              .delete-member-button {
+                min-height: 42px;
+                padding: 0 16px;
+                border: 1px solid #e7bcbc;
+                border-radius: 10px;
+                background: #fff7f7;
+                color: #a84a4a;
+                font: inherit;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: 0.2s ease;
+              }
+
+              .delete-member-button:hover {
+                background: #fff0f0;
+                border-color: #d99b9b;
+                transform: translateY(-1px);
+              }
+
+              @media (max-width: 700px) {
+                .profile-modal-backdrop {
+                  align-items: flex-start;
+                  padding: 14px;
+                }
+
+                .profile-modal {
+                  max-height: calc(100vh - 28px);
+                  padding: 20px;
+                  border-radius: 18px;
+                }
+
+                .profile-modal-header h2 {
+                  font-size: 23px;
+                }
+
+                .profile-form-grid {
+                  grid-template-columns: 1fr;
+                }
+
+                .profile-field-full {
+                  grid-column: auto;
+                }
+
+                .profile-modal-footer {
+                  align-items: stretch;
+                  flex-direction: column;
+                }
+
+                .profile-modal-actions {
+                  width: 100%;
+                }
+
+                .profile-cancel-button,
+                .profile-save-button {
+                  flex: 1;
+                }
+              }
+            `}</style>
+          </div>
+        )}
+
+          </>
+        )}
+      </main>
+    </div>
+  </div>
+);
+  }
+
+  // FAMILY SELECTION SCREEN
+  return (
+    <div className="app">
+      <header className="header">
+        <div className="brand">
+          <div className="logo">H</div>
+          <div>
+            <h2>HealthHub</h2>
+            <p>Your Family, Your Health</p>
+          </div>
+        </div>
+
+        <button
+          className="switch-account"
+          onClick={async () => {
+            await supabase.auth.signOut();
+            setUser(null);
+            setFamilyId(null);
+            setFamilyName("");
+            setFamilyMembers([]);
+            setSelectedMember(null);
+            setActiveModule("dashboard");
+          }}
+        >
+          ⇄ Switch Account
+        </button>
+      </header>
+
+      <main className="profile-page">
+        <div className="welcome">
+          <h1>Who's using HealthHub?</h1>
+          <p>Select a profile to continue</p>
+          {familyName && (
+            <div style={{
+              marginTop: "10px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              borderRadius: "999px",
+              background: "#edf3ec",
+              color: "#5d7663",
+              fontSize: "13px",
+              fontWeight: 700,
+            }}>
+              🏠 {familyName}
+            </div>
+          )}
+        </div>
+
+        <div className="profiles">
+          {loadingMembers ? (
+            <div className="family-state">
+              <h3>Loading family members...</h3>
+              <p>Please wait while we load your family profiles.</p>
+            </div>
+          ) : membersError ? (
+            <div className="family-state">
+              <h3>Unable to load family</h3>
+              <p>{membersError}</p>
+              <button
+                type="button"
+                onClick={() => user && loadFamilyMembers(user.id)}
+              >
+                Try Again
+              </button>
+            </div>
+          ) : familyMembers.length === 0 ? (
+            <div className="family-state family-empty-compact">
+              <p>No family profiles are available yet.</p>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMembersError("");
+                    setSuccessMessage("");
+                    setSelectedMember(null);
+                    setShowProfile(false);
+                    setNewName("");
+                    setNewRelation("");
+                    setNewRole("child");
+                    setNewEmail("");
+                    setNewAvatar("");
+                    setShowAddForm(true);
+                  }}
+                >
+                  + Add Member
+                </button>
+              )}
+            </div>
+          ) : (
+            familyMembers.map((member) => {
+              const isPending = member.role === "adult" && !member.user_id;
+
+              return (
+                <button
+                  className={`profile-card ${isPending ? "profile-card-pending" : ""}`}
+                  key={member.id}
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => {
+                    if (!isPending) {
+                      setSelectedMember(member);
+                      setActiveModule("dashboard");
+                    }
+                  }}
+                >
+                  <div className="avatar">{member.avatar}</div>
+                  <h3>{member.name}</h3>
+                  <p>{member.relation}{member.role === "admin" ? " • Admin" : ""}</p>
+                  {isPending ? (
+                    <>
+                      <span className="pending-invitation-badge">Invitation pending</span>
+                      <span className="pending-card-note">Waiting for acceptance</span>
+                    </>
+                  ) : (
+                    <span className="active-profile-badge">Active profile</span>
+                  )}
+                </button>
+              );
+            })
+          )}
+
+          <button
+            type="button"
+            className="profile-card add-card"
+            onClick={() => {
+              setMembersError("");
+              setSuccessMessage("");
+              setSelectedMember(null);
+              setShowProfile(false);
+              setNewName("");
+              setNewRelation("");
+              setNewRole("child");
+              setNewEmail("");
+              setNewAvatar("");
+              setShowAddForm(true);
+            }}
+            disabled={!familyId || !isAdmin}
+          >
+            <div className="add-icon">+</div>
+            <h3>Add Member</h3>
+            <p>New family profile</p>
+          </button>
+        </div>
+
+        {showAddForm && (
+          <div className="add-member-overlay">
+            <form className="add-member-form" onSubmit={addMember}>
+              <button
+                type="button"
+                className="close-form"
+                onClick={() => {
+                  if (!addingMember) {
+                    setShowAddForm(false);
+                    setSelectedMember(null);
+                    setShowProfile(false);
+                    setMembersError("");
+                  }
+                }}
+                disabled={addingMember}
+              >
+                ×
+              </button>
+
+              <div className="add-member-form-heading">
+                <span className="add-member-kicker">FAMILY MANAGEMENT</span>
+                <h2>Add Family Member</h2>
+                <p>{newRole === "adult" ? "An invitation card will appear as Pending. It becomes an active profile only after the member accepts." : "Create a new family health profile managed by the family admin."}</p>
+              </div>
+
+              {membersError && (
+                <div className="add-member-error" role="alert">
+                  <span className="add-member-error-icon">!</span>
+                  <div>
+                    <strong>Couldn't add this member</strong>
+                    <p>{membersError}</p>
+                  </div>
+                </div>
+              )}
+
+              <label>Name</label>
+              <input
+                type="text"
+                placeholder="Enter name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+
+              <label>Relation</label>
+              <input
+                type="text"
+                placeholder="e.g. Father, Sister"
+                value={newRelation}
+                onChange={(e) => setNewRelation(e.target.value)}
+              />
+
+              <label>Member Type</label>
+              <select
+                value={newRole}
+                onChange={(e) => {
+                  const role = e.target.value;
+                  setNewRole(role);
+                  if (role === "child") {
+                    setNewEmail("");
+                  }
+                }}
+                className="member-type-select"
+              >
+                <option value="child">Child — no login required</option>
+                <option value="adult">Adult — send invitation</option>
+              </select>
+
+              {newRole === "adult" && (
+                <>
+                  <label>Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="member@example.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                  <p className="member-email-helper">
+                    An invitation will be sent to this email address.
+                  </p>
+                </>
+              )}
+
+              <label>Choose Avatar</label>
+
+              <div className="avatar-options">
+                {avatarOptions.map((avatar) => (
+                  <button
+                    type="button"
+                    key={avatar}
+                    className={`avatar-option ${
+                      newAvatar === avatar ? "avatar-selected" : ""
+                    }`}
+                    onClick={() => setNewAvatar(avatar)}
+                  >
+                    {avatar}
+                  </button>
+                ))}
+              </div>
+
+              <div className="add-member-submit-row">
+                <button
+                  type="button"
+                  className="add-member-cancel"
+                  onClick={() => {
+                    if (!addingMember) {
+                      setShowAddForm(false);
+                      setMembersError("");
+                    }
+                  }}
+                  disabled={addingMember}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="add-member-submit"
+                  disabled={addingMember}
+                >
+                  {addingMember ? (
+                    <span className="submit-loading">
+                      <span className="submit-spinner" /> {newRole === "adult" ? "Sending invitation…" : "Adding member…"}
+                    </span>
+                  ) : newRole === "adult" ? (
+                    "Send Invitation"
+                  ) : (
+                    "Add Member"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {memberToDelete && (
+          <div className="member-delete-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-member-title">
+            <div className="member-delete-modal">
+              <div className="delete-modal-icon">!</div>
+              <h2 id="delete-member-title">Remove {memberToDelete.name || "this member"}?</h2>
+              <p>
+                This will remove their family profile from <strong>{familyName || "your family"}</strong>.
+                {memberToDelete.role === "adult" && !memberToDelete.user_id
+                  ? " Any pending invitation for this profile will also be cancelled."
+                  : ""}
+              </p>
+              <div className="delete-modal-actions">
+                <button
+                  type="button"
+                  className="delete-cancel-button"
+                  onClick={() => setMemberToDelete(null)}
+                  disabled={deletingMember}
+                >
+                  Keep Member
+                </button>
+                <button
+                  type="button"
+                  className="delete-confirm-button"
+                  onClick={confirmDeleteMember}
+                  disabled={deletingMember}
+                >
+                  {deletingMember ? "Removing…" : "Remove Member"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes emptyStateIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+
+          .add-member-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(35, 45, 38, 0.34);
+            backdrop-filter: blur(4px);
+          }
+
+          .add-member-form {
+            position: relative;
+            width: min(520px, 100%);
+            max-height: min(760px, calc(100vh - 48px));
+            overflow-y: auto;
+            padding: 32px 34px 30px;
+            border: 1px solid #e2e7df;
+            border-radius: 22px;
+            background: #fffefc;
+            box-shadow:
+              0 24px 70px rgba(42, 54, 45, 0.18),
+              0 4px 18px rgba(42, 54, 45, 0.08);
+            scrollbar-width: thin;
+            scrollbar-color: #c9d2c5 transparent;
+          }
+
+          .add-member-form::-webkit-scrollbar {
+            width: 7px;
+          }
+
+          .add-member-form::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: #c9d2c5;
+          }
+
+          .add-member-form h2 {
+            margin: 0;
+            padding-right: 38px;
+            color: #2f3d34;
+            font-size: 28px;
+            line-height: 1.15;
+            letter-spacing: -0.5px;
+          }
+
+          .add-member-form > p:not(.member-email-helper) {
+            margin: 8px 0 26px;
+            color: #7c8980;
+            font-size: 14px;
+            line-height: 1.5;
+          }
+
+          .add-member-form > label {
+            display: block;
+            margin: 0 0 8px;
+            color: #536258;
+            font-size: 13px;
+            font-weight: 650;
+          }
+
+          .add-member-form > input,
+          .add-member-form > select {
+            display: block;
+            width: 100%;
+            height: 48px;
+            margin: 0 0 20px;
+            padding: 0 14px;
+            border: 1px solid #dbe1d9;
+            border-radius: 11px;
+            background: #fbfcfa;
+            color: #343c36;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+          }
+
+          .add-member-form > input:focus,
+          .add-member-form > select:focus {
+            border-color: #7d967f;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(103, 130, 108, 0.10);
+          }
+
+          .member-type-select {
+            appearance: auto;
+            cursor: pointer;
+          }
+
+          .member-email-helper {
+            margin: -12px 0 20px;
+            color: #8a958d;
+            font-size: 11px;
+            line-height: 1.4;
+          }
+
+          .avatar-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 2px 0 24px;
+          }
+
+          .avatar-option {
+            width: 58px;
+            height: 58px;
+            flex: 0 0 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 1px solid #dfe5dd;
+            border-radius: 50%;
+            background: #f1f5ed;
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+          }
+
+          .avatar-option:hover {
+            transform: translateY(-2px);
+            border-color: #9caf9d;
+          }
+
+          .avatar-option.avatar-selected {
+            border: 3px solid #63806a;
+            box-shadow: 0 5px 14px rgba(78, 103, 84, 0.12);
+          }
+
+          .add-member-submit {
+            width: 100%;
+            min-height: 48px;
+            border: none;
+            border-radius: 11px;
+            background: #63806a;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .18s ease, transform .14s ease, box-shadow .18s ease;
+          }
+
+          .add-member-submit:hover {
+            background: #56715d;
+            box-shadow: 0 7px 18px rgba(76, 103, 82, 0.16);
+          }
+
+          .add-member-submit:active {
+            transform: translateY(1px);
+          }
+
+          .close-form {
+            position: absolute;
+            top: 18px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #7d8981;
+            font-size: 27px;
+            line-height: 1;
+            cursor: pointer;
+          }
+
+          .close-form:hover {
+            background: #eef2ec;
+            color: #526056;
+          }
+
+
+          .pending-profile-panel {
+            display:flex;
+            align-items:flex-start;
+            gap:12px;
+            margin-bottom:16px;
+            padding:15px 17px;
+            border:1px solid #eadfbe;
+            border-radius:15px;
+            background:linear-gradient(135deg,#fffaf0,#fff7e6);
+            color:#70582c;
+          }
+          .pending-profile-icon {
+            width:34px; height:34px; flex:0 0 34px; display:grid; place-items:center;
+            border-radius:50%; background:#f7e7bf; font-size:16px;
+          }
+          .pending-profile-panel strong { display:block; font-size:14px; color:#6c5223; margin-bottom:3px; }
+          .pending-profile-panel p { margin:0; font-size:12px; line-height:1.5; color:#806a3d; }
+
+          .healthhub-alert {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 14px 42px 14px 14px;
+            border-radius: 14px;
+            border: 1px solid;
+            box-shadow: 0 8px 24px rgba(40, 55, 45, 0.06);
+          }
+          .healthhub-alert-icon {
+            width: 28px;
+            height: 28px;
+            flex: 0 0 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            font-weight: 800;
+          }
+          .healthhub-alert strong { display: block; font-size: 14px; margin: 1px 0 3px; }
+          .healthhub-alert p { margin: 0; font-size: 13px; line-height: 1.45; }
+          .healthhub-alert button {
+            position: absolute;
+            top: 9px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: inherit;
+            font-size: 20px;
+            cursor: pointer;
+          }
+          .healthhub-alert-error { background: #fff8f6; border-color: #f0d7cf; color: #74473f; }
+          .healthhub-alert-error .healthhub-alert-icon { background: #f7ddd7; color: #9b4e43; }
+          .healthhub-alert-success { background: #f3f8f2; border-color: #d6e4d3; color: #38513e; }
+          .healthhub-alert-success .healthhub-alert-icon { background: #dcebd9; color: #52735a; }
+          .status-pending { background: #fff8e9 !important; color: #80622d !important; }
+          .pending-card-note {
+            display: block;
+            margin-top: 4px;
+            color: #8a958d;
+            font-size: 10px;
+            font-weight: 600;
+          }
+          .profile-details-button:disabled {
+            opacity: .62;
+            cursor: not-allowed;
+            transform: none !important;
+          }
+          .pending-invitation-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 7px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #fff4d9;
+            border: 1px solid #f0dfb5;
+            color: #7c622f;
+            font-size: 10px;
+            font-weight: 750;
+          }
+          .submit-loading { display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+          .submit-spinner {
+            width: 15px;
+            height: 15px;
+            border: 2px solid rgba(255,255,255,.45);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: healthhubSpin .75s linear infinite;
+          }
+          @keyframes healthhubSpin { to { transform: rotate(360deg); } }
+          .add-member-submit:disabled { opacity: .72; cursor: wait; box-shadow: none; }
+          .close-form:disabled { opacity: .35; cursor: not-allowed; }
+          .member-delete-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            display: grid;
+            place-items: center;
+            padding: 22px;
+            background: rgba(27, 37, 30, .42);
+            backdrop-filter: blur(5px);
+          }
+          .member-delete-modal {
+            width: min(440px, 100%);
+            padding: 30px;
+            border-radius: 22px;
+            background: #fffefc;
+            border: 1px solid #e4e9e1;
+            box-shadow: 0 28px 80px rgba(29, 42, 33, .22);
+            text-align: center;
+          }
+          .delete-modal-icon {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 14px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: #f9e9e5;
+            color: #9b5146;
+            font-weight: 850;
+            font-size: 22px;
+          }
+          .member-delete-modal h2 { margin: 0 0 9px; color: #29382f; font-size: 22px; }
+          .member-delete-modal p { margin: 0 auto; max-width: 350px; color: #748078; font-size: 13px; line-height: 1.6; }
+          .delete-modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+          .delete-modal-actions button {
+            flex: 1;
+            min-height: 46px;
+            border-radius: 11px;
+            font-size: 13px;
+            font-weight: 750;
+            cursor: pointer;
+          }
+          .delete-cancel-button { border: 1px solid #dce3da; background: #f8faf7; color: #526157; }
+          .delete-confirm-button { border: 1px solid #b9675c; background: #a9564b; color: #fff; }
+          .delete-modal-actions button:disabled { opacity: .6; cursor: wait; }
+
+          @media (max-width: 600px) {
+            .add-member-overlay {
+              align-items: flex-end;
+              padding: 0;
+            }
+
+            .add-member-form {
+              width: 100%;
+              max-height: 92vh;
+              padding: 28px 22px 24px;
+              border-radius: 22px 22px 0 0;
+            }
+
+            .add-member-form h2 {
+              font-size: 24px;
+            }
+
+            .avatar-options {
+              gap: 9px;
+            }
+
+            .avatar-option {
+              width: 54px;
+              height: 54px;
+              flex-basis: 54px;
+              font-size: 26px;
+            }
+
+            .delete-modal-actions {
+              flex-direction: column-reverse;
+            }
+          }
+
+
+          .add-member-form-heading { padding-right: 40px; }
+          .add-member-kicker { display:block; margin-bottom:7px; color:#6d8872; font-size:10px; font-weight:800; letter-spacing:1.25px; }
+          .add-member-form-heading p { margin-bottom:22px !important; }
+          .add-member-error { display:flex; gap:11px; align-items:flex-start; margin:-5px 0 20px; padding:13px 14px; border:1px solid #ead0ca; border-radius:13px; background:#fff8f6; color:#7e4740; }
+          .add-member-error-icon { display:grid; place-items:center; flex:0 0 22px; width:22px; height:22px; border-radius:50%; background:#f1d8d2; color:#9a5148; font-size:12px; font-weight:900; }
+          .add-member-error strong { display:block; margin-bottom:3px; color:#75423b; font-size:13px; }
+          .add-member-error p { margin:0 !important; color:#8b625c; font-size:12px; line-height:1.45; }
+          .add-member-submit-row { display:flex; gap:10px; }
+          .add-member-submit-row .add-member-submit, .add-member-cancel { flex:1; }
+          .add-member-cancel { min-height:48px; border:1px solid #dbe2da; border-radius:11px; background:#fff; color:#59665e; font:inherit; font-size:14px; font-weight:700; cursor:pointer; }
+          .add-member-cancel:hover:not(:disabled) { background:#f4f7f3; }
+          .profile-card-pending { cursor:default !important; background:linear-gradient(180deg,#fff 0%,#f7faf6 100%) !important; border-color:#dfe7df !important; }
+          .profile-card-pending:hover { transform:none !important; }
+          .active-profile-badge { display:inline-flex; align-items:center; justify-content:center; min-height:26px; margin-top:8px; padding:0 10px; border-radius:999px; color:#55705b; background:#edf4ee; border:1px solid #dce8de; font-size:10px; font-weight:800; }
+          .add-member-submit:disabled, .add-member-cancel:disabled { opacity:.62; cursor:not-allowed; }
+          .member-delete-overlay { background:rgba(30,42,34,.42) !important; backdrop-filter:blur(5px); }
+          .member-delete-modal { border:1px solid #e5e9e4 !important; border-radius:22px !important; background:#fffefc !important; box-shadow:0 28px 80px rgba(25,38,30,.22) !important; }
+          .delete-modal-icon { background:#f7ece9 !important; color:#a35a51 !important; border-radius:15px !important; }
+          .delete-modal-actions { gap:10px !important; }
+
+          .family-mini-pending { cursor: default !important; opacity: .78; }
+          .family-mini-pending:hover { background: transparent !important; }
+
+          .family-empty-compact { grid-column:1/-1; min-height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#77837b; }
+          .family-empty-compact p { margin:0; }
+          .family-empty-compact button { border:1px solid #d4dfd5; border-radius:10px; background:#edf4ee; color:#58715e; padding:10px 16px; font-weight:750; cursor:pointer; }
+        `}</style>
+
+        <div className="security">
+          🔒 Your data is safe and encrypted
+        </div>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;

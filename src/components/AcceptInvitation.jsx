@@ -1,98 +1,250 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 import "./AcceptInvitation.css";
+export default function AcceptInvitation({ onBackToLogin }) {
+  const [loading, setLoading] = useState(true);
+  const [accepting, setAccepting] = useState(false);
+  const [error, setError] = useState("");
+  const [details, setDetails] = useState(null);
 
-function AcceptInvitation({ onBack }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  // Temporary frontend flow.
-  // Supabase invitation/account creation will be connected later.
-  const handleAcceptInvitation = async (e) => {
-  e.preventDefault();
-  setError("");
+  const getToken = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("token") || "";
+  };
 
-  if (password.length < 6) {
-    setError("Password must be at least 6 characters.");
-    return;
+  useEffect(() => {
+    loadInvitation();
+  }, []);
+
+  async function loadInvitation() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const token = getToken();
+
+      if (!token) {
+        setError(
+          "This invitation link is missing its invitation token. Please reopen the invitation email."
+        );
+        return;
+      }
+
+      const { data, error: functionError } =
+        await supabase.functions.invoke(
+          "accept-family-invitation",
+          {
+            body: {
+              action: "details",
+              token,
+            },
+          }
+        );
+
+      if (functionError) {
+        throw functionError;
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            "This invitation is invalid or expired."
+        );
+      }
+
+      setDetails(data);
+    } catch (err) {
+      console.error("Invitation details error:", err);
+
+      setError(
+        err?.message ||
+          "Unable to load this invitation. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
-  if (password !== confirmPassword) {
-    setError("Passwords do not match.");
-    return;
+  async function handleAccept(e) {
+    e.preventDefault();
+
+    setError("");
+
+    if (!password || password.length < 6) {
+      setError(
+        "Please create a password with at least 6 characters."
+      );
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      setError(
+        "This invitation link is missing its invitation token. Please reopen the invitation email."
+      );
+      return;
+    }
+
+    setAccepting(true);
+
+    try {
+      const { data, error: functionError } =
+        await supabase.functions.invoke(
+          "accept-family-invitation",
+          {
+            body: {
+              action: "accept",
+              token,
+              password,
+            },
+          }
+        );
+
+      if (functionError) {
+        throw functionError;
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            "We couldn't accept the invitation."
+        );
+      }
+
+      /*
+       * The Edge Function has now:
+       * 1. Set the invited user's password
+       * 2. Confirmed the email
+       * 3. Linked the Auth user to family_members
+       * 4. Marked the invitation as accepted
+       *
+       * Now send the user to the normal Login page.
+       */
+
+      await supabase.auth.signOut();
+
+      window.history.replaceState(
+        {},
+        document.title,
+        "/"
+      );
+
+      window.location.reload();
+    } catch (err) {
+      console.error("Accept invitation error:", err);
+
+      setError(
+        err?.message ||
+          "We couldn't accept the invitation. Please try again."
+      );
+    } finally {
+      setAccepting(false);
+    }
   }
 
-  setLoading(true);
-
-  try {
-    // TEMPORARY:
-    // Real Supabase invitation/account creation
-    // will be connected here later.
-
-    alert("Invitation accepted successfully!");
-
-    // Go back to Login page
-    onBack();
-
-  } catch (err) {
-    console.error(err);
-    setError("Something went wrong. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
-  return (
-    <div className="invitation-page">
-      <div className="invitation-card">
-
-        {/* Brand */}
-        <div className="invitation-brand">
-          <div className="invitation-logo">H</div>
-
-          <div>
-            <h1>HealthHub</h1>
-            <p>Your Family, Your Health</p>
+  if (loading) {
+    return (
+      <div className="accept-invitation-page">
+        <div className="invitation-card">
+          <div className="invitation-loading">
+            Loading your invitation...
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Invitation Icon */}
-        <div className="invitation-icon">
-          ✓
+  if (!details) {
+    return (
+      <div className="accept-invitation-page">
+        <div className="invitation-card">
+          <div className="invitation-header">
+            <span className="invitation-eyebrow">
+              HEALTHHUB
+            </span>
+
+            <h1>Invitation unavailable</h1>
+
+            <p>
+              We couldn't load this invitation.
+            </p>
+          </div>
+
+          {error && (
+            <div className="invitation-error">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="invitation-back-button"
+            onClick={() => {
+              if (onBackToLogin) {
+                onBackToLogin();
+              } else {
+                window.location.href = "/";
+              }
+            }}
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="accept-invitation-page">
+      <div className="invitation-card">
+        <div className="invitation-header">
+          <span className="invitation-eyebrow">
+            YOU'RE INVITED
+          </span>
+
+          <h1>Join your family on HealthHub</h1>
+
+          <p>
+            Create your password to activate your
+            HealthHub account.
+          </p>
         </div>
 
-        {/* Heading */}
-        <h2>You've Been Invited!</h2>
-
-        <p className="invitation-subtitle">
-          You've been invited to join your family's HealthHub.
-          Create your password to get started.
-        </p>
-
-        {/* Family Information */}
-        <div className="family-invite-box">
-          <div className="family-invite-label">
+        <div className="invitation-family-box">
+          <div className="family-label">
             FAMILY
           </div>
 
-          <div className="family-invite-name">
-            Sharma Family
+          <div className="family-name">
+            {details.familyName}
           </div>
 
-          <div className="family-invite-details">
+          <div className="invitation-detail-row">
             <span>Invited as</span>
             <strong>Adult Member</strong>
           </div>
 
-          <div className="family-invite-details">
+          <div className="invitation-detail-row">
+            <span>Name</span>
+            <strong>{details.name}</strong>
+          </div>
+
+          <div className="invitation-detail-row">
             <span>Email</span>
-            <strong>member@example.com</strong>
+            <strong>{details.email}</strong>
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleAcceptInvitation}>
-
+        <form onSubmit={handleAccept}>
           <div className="form-group">
             <label htmlFor="password">
               Create Password
@@ -101,11 +253,13 @@ function AcceptInvitation({ onBack }) {
             <input
               id="password"
               type="password"
-              placeholder="Create your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
-              required
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
+              placeholder="Enter at least 6 characters"
+              autoComplete="new-password"
+              disabled={accepting}
             />
           </div>
 
@@ -117,47 +271,52 @@ function AcceptInvitation({ onBack }) {
             <input
               id="confirmPassword"
               type="password"
-              placeholder="Re-enter your password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              minLength={6}
-              required
+              onChange={(e) =>
+                setConfirmPassword(e.target.value)
+              }
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+              disabled={accepting}
             />
           </div>
 
           {error && (
-            <p className="invitation-error">
+            <div className="invitation-error">
               {error}
-            </p>
+            </div>
           )}
 
           <button
             type="submit"
             className="accept-invitation-button"
-            disabled={loading}
+            disabled={accepting}
           >
-            {loading ? "Setting up..." : "Accept Invitation →"}
+            {accepting
+              ? "Activating Account..."
+              : "Accept Invitation →"}
           </button>
-
         </form>
 
-        {/* Security Note */}
         <div className="invitation-security">
           🔒 Your health information is private and secure
         </div>
 
-        {/* Back */}
         <button
           type="button"
-          className="invitation-back"
-          onClick={onBack}
+          className="back-to-login-link"
+          onClick={() => {
+            if (onBackToLogin) {
+              onBackToLogin();
+            } else {
+              window.location.href = "/";
+            }
+          }}
+          disabled={accepting}
         >
-          ← Back to Login
+          Back to Login
         </button>
-
       </div>
     </div>
   );
 }
-
-export default AcceptInvitation;
