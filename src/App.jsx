@@ -4,6 +4,8 @@ import { supabase } from "./lib/supabase";
 import Login from "./components/Login";
 import CreateFamily from "./components/CreateFamily";
 import AcceptInvitation from "./components/AcceptInvitation";
+import React, { useEffect, useState } from "react";
+import { fetchMedicalRecords } from "./features/medical-records/medicalRecords";
 
 const avatarOptions = ["👨🏻", "👩🏻", "👦🏻", "👧🏻", "👴🏻", "👵🏻"];
 
@@ -75,7 +77,8 @@ function DashboardApp() {
   const [familyMembers, setFamilyMembers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeModule, setActiveModule] = useState("dashboard");
-
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [dashboardMedicalReports, setDashboardMedicalReports] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [membersError, setMembersError] = useState("");
   const [authLoading, setAuthLoading] = useState(true);
@@ -106,6 +109,23 @@ function DashboardApp() {
   const [editEmergencyContact, setEditEmergencyContact] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const refreshDashboardMedicalReports = async (member = selectedMember) => {
+  if (!member) {
+    setDashboardMedicalReports([]);
+    return;
+  }
+
+  try {
+    const records = await fetchMedicalRecords(member.id);
+    setDashboardMedicalReports(records || []);
+  } catch (error) {
+    console.warn(
+      "Unable to load dashboard medical reports:",
+      error
+    );
+    setDashboardMedicalReports([]);
+  }
+};
 
   useEffect(() => {
     let mounted = true;
@@ -184,6 +204,31 @@ function DashboardApp() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDashboardMedicalReports() {
+      if (!selectedMember) {
+        if (!cancelled) setDashboardMedicalReports([]);
+        return;
+      }
+
+      try {
+        const records = await fetchMedicalRecords(selectedMember.id);
+        if (!cancelled) setDashboardMedicalReports(records || []);
+      } catch (error) {
+        console.warn("Unable to load dashboard medical reports:", error);
+        if (!cancelled) setDashboardMedicalReports([]);
+      }
+    }
+
+    void loadDashboardMedicalReports();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMember, activeModule]);
 
   async function loadFamilyMembers(userId) {
     setLoadingMembers(true);
@@ -521,6 +566,7 @@ function DashboardApp() {
 
       if (selectedMember?.id === memberToDelete.id) {
         setSelectedMember(null);
+        setActiveModule("dashboard");
       }
 
       setSuccessMessage(`${memberToDelete.name || "Member"} was removed from the family.`);
@@ -667,6 +713,7 @@ function DashboardApp() {
           setFamilyName("");
           setFamilyMembers([]);
           setSelectedMember(null);
+          setActiveModule("dashboard");
           setIsAdmin(false);
           setMembersError("");
         }}
@@ -676,6 +723,7 @@ function DashboardApp() {
           setFamilyId(family.id);
           setFamilyName(family.name || "Your Family");
           setSelectedMember(null);
+          setActiveModule("dashboard");
           setMembersError("");
           setSuccessMessage("Your family is ready. You can now add members from the family page.");
           setShowAddForm(false);
@@ -724,11 +772,6 @@ function DashboardApp() {
 
   // DASHBOARD
   if (selectedMember) {
-    if (activeModule === "medical-records") {
-      return (
-        <MedicalRecordsPage selectedMember={selectedMember} />
-      );
-    }
     return (
   <div className="app">
     <header className="header">
@@ -744,6 +787,7 @@ function DashboardApp() {
         className="switch-account"
         onClick={() => {
           setShowProfile(false);
+          setActiveModule("dashboard");
           setSelectedMember(null);
         }}
       >
@@ -757,10 +801,28 @@ function DashboardApp() {
       <aside className="sidebar">
 
         <div className="sidebar-section">
-          <button className="nav-item active">⌂ Overview</button>
           <button
-            className="nav-item"
-            onClick={() => setActiveModule("medical-records")}
+            type="button"
+            className={`nav-item ${
+              activeModule === "dashboard" ? "active" : ""
+            }`}
+            onClick={() => {
+              setActiveModule("dashboard");
+              setShowProfile(false);
+            }}
+          >
+            🏠 Overview
+          </button>
+
+          <button
+            type="button"
+            className={`nav-item ${
+              activeModule === "medical-records" ? "active" : ""
+            }`}
+            onClick={() => {
+              setActiveModule("medical-records");
+              setShowProfile(false);
+            }}
           >
             📄 Medical Reports
           </button>
@@ -831,7 +893,16 @@ function DashboardApp() {
           </div>
         )}
 
-        {/* PROFILE HEADER */}
+        {activeModule === "medical-records" ? (
+          <MedicalRecordsPage
+            selectedMember={selectedMember}
+            onRecordsChanged={() =>
+              refreshDashboardMedicalReports(selectedMember)
+            }
+          />
+        ) : (
+          <>
+            {/* PROFILE HEADER */}
         <div className="dashboard-profile-header">
 
           <div className="dashboard-person">
@@ -949,35 +1020,69 @@ function DashboardApp() {
 
             <div className="panel-title">
               <h2>📄 Recent Medical Reports</h2>
-              <span>View All</span>
+
+              <button
+                type="button"
+                className="panel-link-button"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#66806b",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  font: "inherit",
+                }}
+                onClick={() => setActiveModule("medical-records")}
+              >
+                View All
+              </button>
             </div>
 
-            <div className="report">
-              <span>🧪</span>
-              <div>
-                <strong>Blood Test Report</strong>
-                <p>Recent medical examination</p>
+            {dashboardMedicalReports.length > 0 ? (
+              dashboardMedicalReports.slice(0, 3).map((report) => (
+                <button
+                  type="button"
+                  key={report.id}
+                  className="report dashboard-report-button"
+                  style={{
+                    width: "100%",
+                    border: "0",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    font: "inherit",
+                    background: "transparent",
+                  }}
+                  onClick={() => setActiveModule("medical-records")}
+                >
+                  <span>🧪</span>
+                  <div>
+                    <strong>{report.title}</strong>
+                    <p>
+                      {report.record_type ||
+                        report.category ||
+                        "Medical report"}
+                      {report.record_date
+                        ? ` • ${new Intl.DateTimeFormat("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          }).format(
+                            new Date(`${report.record_date}T00:00:00`)
+                          )}`
+                        : ""}
+                    </p>
+                  </div>
+                  <b>›</b>
+                </button>
+              ))
+            ) : (
+              <div className="dashboard-empty-reports">
+                <strong>No medical reports yet</strong>
+                <p>
+                  Upload a report from Medical Reports to see it here.
+                </p>
               </div>
-              <b>›</b>
-            </div>
-
-            <div className="report">
-              <span>🩺</span>
-              <div>
-                <strong>General Checkup</strong>
-                <p>Routine health check</p>
-              </div>
-              <b>›</b>
-            </div>
-
-            <div className="report">
-              <span>❤️</span>
-              <div>
-                <strong>ECG Report</strong>
-                <p>Heart health examination</p>
-              </div>
-              <b>›</b>
-            </div>
+            )}
 
           </section>
 
@@ -1576,6 +1681,8 @@ function DashboardApp() {
           </div>
         )}
 
+          </>
+        )}
       </main>
     </div>
   </div>
@@ -1603,6 +1710,7 @@ function DashboardApp() {
             setFamilyName("");
             setFamilyMembers([]);
             setSelectedMember(null);
+            setActiveModule("dashboard");
           }}
         >
           ⇄ Switch Account
@@ -1682,7 +1790,10 @@ function DashboardApp() {
                   type="button"
                   disabled={isPending}
                   onClick={() => {
-                    if (!isPending) setSelectedMember(member);
+                    if (!isPending) {
+                      setSelectedMember(member);
+                      setActiveModule("dashboard");
+                    }
                   }}
                 >
                   <div className="avatar">{member.avatar}</div>
