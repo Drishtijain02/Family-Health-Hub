@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./AIChatbot.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,6 +9,16 @@ function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+  const openChatbot = () => setIsOpen(true);
+
+  window.addEventListener("open-health-ai", openChatbot);
+
+  return () => {
+    window.removeEventListener("open-health-ai", openChatbot);
+  };
+}, []);
+
   const sendMessage = async () => {
     if (!message.trim() || loading) return;
 
@@ -18,31 +28,42 @@ function AIChatbot() {
 
     setMessages((prev) => [
       ...prev,
-      { role: "user", content: userMessage },
+      {
+        role: "user",
+        content: userMessage,
+      },
     ]);
 
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/ai/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: userMessage,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/ai/chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: userMessage,
+          }),
+        }
+      );
 
       const data = await response.json();
 
-      if (!data.success) {
-        throw new Error(data.error || "Something went wrong");
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Something went wrong"
+        );
       }
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.response },
+        {
+          role: "assistant",
+          content: data.response,
+        },
       ]);
     } catch (error) {
       console.error("Chatbot error:", error);
@@ -51,7 +72,8 @@ function AIChatbot() {
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, I couldn't process your question.",
+          content:
+            "Sorry, I couldn't process your question.",
         },
       ]);
     } finally {
@@ -66,10 +88,13 @@ function AIChatbot() {
           <div className="ai-chat-header">
             <div>
               <h3>AI Health Assistant</h3>
-              <span>Here to help with your health questions</span>
+              <span>
+                Here to help with your health questions
+              </span>
             </div>
 
             <button
+              type="button"
               className="ai-close-btn"
               onClick={() => setIsOpen(false)}
             >
@@ -82,11 +107,14 @@ function AIChatbot() {
               <div className="ai-welcome">
                 <div className="ai-welcome-icon">🤖</div>
 
-                <h4>Hi! I'm your AI Health Assistant</h4>
+                <h4>
+                  Hi! I'm your AI Health Assistant
+                </h4>
 
                 <p>
-                  Ask me questions about health, medical reports,
-                  medicines, symptoms, or general wellness.
+                  Ask me questions about health, medical
+                  reports, medicines, symptoms, or general
+                  wellness.
                 </p>
               </div>
             )}
@@ -101,18 +129,27 @@ function AIChatbot() {
                 }
               >
                 <div className="message-role">
-                  {msg.role === "user" ? "You" : "AI Assistant"}
+                  {msg.role === "user"
+                    ? "You"
+                    : "AI Assistant"}
                 </div>
 
                 <div className="message-content">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
 
             {loading && (
               <div className="ai-message assistant-message">
-                <div className="message-role">AI Assistant</div>
+                <div className="message-role">
+                  AI Assistant
+                </div>
+
                 <div className="message-content">
                   Thinking...
                 </div>
@@ -125,7 +162,9 @@ function AIChatbot() {
               type="text"
               value={message}
               placeholder="Ask a health question..."
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) =>
+                setMessage(e.target.value)
+              }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   sendMessage();
@@ -133,7 +172,11 @@ function AIChatbot() {
               }}
             />
 
-            <button onClick={sendMessage} disabled={loading}>
+            <button
+              type="button"
+              onClick={sendMessage}
+              disabled={loading}
+            >
               Send
             </button>
           </div>
@@ -141,8 +184,12 @@ function AIChatbot() {
       )}
 
       <button
-        className={`ai-floating-button ${isOpen ? "chat-open" : ""}`}
-        onClick={() => setIsOpen(!isOpen)}
+        type="button"
+        className={`ai-floating-button ${
+          isOpen ? "chat-open" : ""
+        }`}
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-label="Open Health AI"
       >
         {isOpen ? "×" : "🤖"}
       </button>

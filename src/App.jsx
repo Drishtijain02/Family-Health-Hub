@@ -1,4 +1,3 @@
-import MedicalRecordsPage from "./features/medical-records/MedicalRecordsPage";
 import "./App.css";
 import { supabase } from "./lib/supabase";
 import Login from "./components/Login";
@@ -6,6 +5,8 @@ import CreateFamily from "./components/CreateFamily";
 import AcceptInvitation from "./components/AcceptInvitation";
 import React, { useEffect, useState } from "react";
 import { fetchMedicalRecords } from "./features/medical-records/medicalRecords";
+import AIChatbot from "./components/AIChatbot";
+import AIHealthSummary from "./components/AIHealthSummary";
 
 const avatarOptions = ["👨🏻", "👩🏻", "👦🏻", "👧🏻", "👴🏻", "👵🏻"];
 
@@ -826,13 +827,26 @@ function DashboardApp() {
           >
             📄 Medical Reports
           </button>
-          <button className="nav-item">💊 Prescriptions</button>
+                 <button className="nav-item">💊 Prescriptions</button>
+
+          <button
+  type="button"
+  className={`nav-item ${
+    activeModule === "health-ai" ? "active" : ""
+  }`}
+  onClick={() => {
+    setActiveModule("health-ai");
+    setShowProfile(false);
+    window.dispatchEvent(new Event("open-health-ai"));
+  }}
+>
+  ✨ Health AI
+</button>
+
           <button className="nav-item">🕐 Timeline</button>
           <button className="nav-item">🔔 Reminders</button>
           <button className="nav-item">🚨 Emergency Card</button>
-          <button className="nav-item">✨ Health AI</button>
-          <button className="nav-item">⚙️ Settings</button>
-        </div>
+          <button className="nav-item">⚙️ Settings</button></div>
 
         <div className="sidebar-family">
           <p>FAMILY MEMBERS</p>
@@ -990,31 +1004,15 @@ function DashboardApp() {
         {/* MAIN CONTENT GRID */}
         <div className="dashboard-grid">
 
-          {/* AI SUMMARY */}
-          <section className="panel ai-panel">
-            <div className="panel-title">
-              <h2>✨ AI Health Summary</h2>
-              <span>Health AI</span>
-            </div>
-
-            <div className="ai-status">
-              <div className="ai-circle">♥</div>
-              <div>
-                <strong>Overall Health</strong>
-                <p>Your health information looks generally stable.</p>
-              </div>
-            </div>
-
-            <div className="attention">
-              ⚠️ <strong>Attention Needed</strong>
-              <p>No major health concerns currently added.</p>
-            </div>
-
-            <button className="ai-button">
-              💬 Chat with Health AI →
-            </button>
-          </section>
-
+         {/* AI SUMMARY */}
+<section className="panel ai-panel">
+  <AIHealthSummary
+    member={selectedMember}
+    medicalReports={dashboardMedicalReports}
+    prescriptions={[]}
+    healthRecords={[]}
+  />
+</section>
           {/* MEDICAL REPORTS */}
           <section className="panel">
 
@@ -1167,30 +1165,10 @@ function DashboardApp() {
 
           </section>
 
-          {/* HEALTH AI CHAT */}
-          <section className="panel chat-panel">
-
-            <div className="panel-title">
-              <h2>💬 Health AI Chat</h2>
-              <span>↗</span>
-            </div>
-
-            <div className="chat-message">
-              <strong>✨ Hi {selectedMember.name}!</strong>
-              <p>
-                I'm your Health AI assistant. You can ask me questions
-                about your reports, medications or general health.
-              </p>
-            </div>
-
-            <div className="chat-input">
-              <span>Ask anything...</span>
-              <button>➤</button>
-            </div>
-
-          </section>
+          
 
         </div>
+         <AIChatbot />
 
         {showProfile && selectedMember && (
           <div className="profile-modal-backdrop" onMouseDown={(e) => {

@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 
-dotenv.config({ path: "./server/.env" });
+dotenv.config({ path: "./.env" });
 
 const app = express();
 
@@ -308,6 +308,12 @@ ${message}
 // -----------------------------
 // AI Health Overview
 // -----------------------------
+// -----------------------------
+// AI Health Overview
+// -----------------------------
+// -----------------------------
+// AI Health Overview
+// -----------------------------
 app.post("/api/ai/health-overview", async (req, res) => {
   try {
     const {
@@ -324,44 +330,24 @@ app.post("/api/ai/health-overview", async (req, res) => {
       });
     }
 
-    if (
-      medicalReports !== undefined &&
-      !Array.isArray(medicalReports)
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: "Medical reports must be an array.",
-      });
-    }
-
-    if (
-      prescriptions !== undefined &&
-      !Array.isArray(prescriptions)
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: "Prescriptions must be an array.",
-      });
-    }
-
-    if (
-      healthRecords !== undefined &&
-      !Array.isArray(healthRecords)
-    ) {
-      return res.status(400).json({
-        success: false,
-        error: "Health records must be an array.",
-      });
-    }
-
     const healthData = {
       member,
-      medicalReports: medicalReports || [],
-      prescriptions: prescriptions || [],
-      healthRecords: healthRecords || [],
+      medicalReports: Array.isArray(medicalReports)
+        ? medicalReports
+        : [],
+      prescriptions: Array.isArray(prescriptions)
+        ? prescriptions
+        : [],
+      healthRecords: Array.isArray(healthRecords)
+        ? healthRecords
+        : [],
     };
 
-    const healthDataText = JSON.stringify(healthData, null, 2);
+    const healthDataText = JSON.stringify(
+      healthData,
+      null,
+      2
+    );
 
     if (healthDataText.length > 50000) {
       return res.status(400).json({
@@ -373,55 +359,102 @@ app.post("/api/ai/health-overview", async (req, res) => {
     const response = await client.responses.create({
       model: MODEL,
       input: `
-You are the AI Health Overview assistant inside Family Health Hub.
+You are the AI Health Summary assistant inside Family Health Hub.
 
-Create a simple health overview for ONE selected family member using
-ONLY the information provided below.
+Create a VERY SHORT dashboard summary for the selected family member.
 
-IMPORTANT SAFETY RULES:
-- Do not diagnose diseases or medical conditions.
+Use ONLY the provided information.
+
+SAFETY:
+- Do not diagnose.
 - Do not prescribe medicines.
-- Do not tell the user to start, stop, or change medication.
-- Do not invent medical information.
+- Do not invent information.
 - Do not assume missing values.
-- If a medical report provides a reference range, use that range when
-  discussing whether a value may be outside the range.
-- If no reference range is provided, do not assume one.
-- If information appears unclear or may contain an OCR error, say that
-  it should be verified against the original report.
-- Clearly distinguish documented information from general explanation.
-- Recommend discussing concerning findings with a qualified healthcare
-  professional.
-- Keep the language simple, calm and understandable.
+- Do not say the person definitely has a disease.
+- If something may need medical attention, say it should be discussed with a healthcare professional.
+- Possible conditions must only be described as possibilities, never diagnoses.
 
-Create the overview using these sections:
+IMPORTANT:
+Return ONLY valid JSON.
+No Markdown.
+No headings.
+No long paragraphs.
+Do not include the family member ID.
 
-1. Overall Health Status
-2. Recent Health Observations
-3. Things That May Need Attention
-4. Stable / Positive Findings
-5. Questions to Discuss With a Doctor
+Keep the response extremely concise.
 
-Selected Family Member's Health Data:
+Return exactly:
+
+{
+  "overall_status": "Good | Stable | Attention | Informational",
+  "overall_summary": "One short sentence, maximum 18 words.",
+  "key_stats": [
+    {
+      "label": "Blood type",
+      "value": "..."
+    },
+    {
+      "label": "Medications",
+      "value": "..."
+    },
+    {
+      "label": "Reports",
+      "value": "..."
+    }
+  ],
+  "attention_items": [
+    "Short item, maximum 12 words."
+  ],
+  "positive_findings": [
+    "Short positive finding, maximum 12 words."
+  ]
+}
+
+STRICT LIMITS:
+- Maximum 3 key_stats
+- Maximum 2 attention_items
+- Maximum 2 positive_findings
+- overall_summary maximum 18 words
+- Each list item maximum 12 words
+- If nothing is available, use an empty array.
+- Do not create unnecessary content.
+
+Health Data:
+
 ${healthDataText}
       `,
     });
 
+    let output = response.output_text?.trim();
+
+    if (!output) {
+      throw new Error("AI returned an empty response.");
+    }
+
+    output = output
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+
+    const summary = JSON.parse(output);
+
     res.json({
       success: true,
       member: member.name,
-      summary: response.output_text,
+      summary,
     });
+
   } catch (error) {
     console.error("Groq health overview error:", error);
 
     res.status(500).json({
       success: false,
-      error: "Unable to generate the health overview. Please try again.",
+      error:
+        "Unable to generate the health overview. Please try again.",
     });
   }
 });
-
 // -----------------------------
 // Start server
 // -----------------------------
