@@ -10,8 +10,11 @@ import {
   Eye,
   CheckCircle2,
   ScanLine,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader2
 } from 'lucide-react';
+
+
 
 export default function Prescriptions() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,6 +23,7 @@ export default function Prescriptions() {
   const [filterCategory, setFilterCategory] = useState('All');
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // OCR Scanning State
   const [isScanning, setIsScanning] = useState(false);
@@ -40,7 +44,7 @@ export default function Prescriptions() {
     return new Date().toISOString().split('T')[0];
   };
 
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     title: '',
     doctor: '',
     recordType: 'Prescription',
@@ -50,7 +54,18 @@ export default function Prescriptions() {
     file: null,
     fileName: '',
     imageUrl: ''
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
+
+  // Clean up Object URLs on unmount or reset to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(formData.imageUrl);
+      }
+    };
+  }, [formData.imageUrl]);
 
   // --- 1. FETCH REPORTS FROM SUPABASE ON MOUNT ---
   useEffect(() => {
@@ -65,7 +80,6 @@ export default function Prescriptions() {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Map database field names (image_url, record_type) to component format
       const formattedData = data.map((item) => ({
         ...item,
         recordType: item.record_type,
@@ -77,12 +91,10 @@ export default function Prescriptions() {
   };
 
   // --- OCR SCANNING & IMAGE URL GENERATION ---
-  const triggerOcrScan = (file) => {
+  const triggerOcrScan = (file, tempUrl) => {
     setIsScanning(true);
     setScanProgress(0);
     setScanComplete(false);
-
-    const uploadedImageUrl = URL.createObjectURL(file);
 
     const interval = setInterval(() => {
       setScanProgress((prev) => {
@@ -96,104 +108,108 @@ export default function Prescriptions() {
             title: prevData.title || file.name.replace(/\.[^/.]+$/, ''),
             recordType: 'Prescription',
             category: 'General',
-            imageUrl: uploadedImageUrl
+            imageUrl: tempUrl
           }));
           return 100;
         }
         return prev + 25;
       });
-    }, 300);
+    }, 250);
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(formData.imageUrl);
+      }
       const tempUrl = URL.createObjectURL(file);
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         file,
         fileName: file.name,
         imageUrl: tempUrl
-      });
-      triggerOcrScan(file);
+      }));
+      triggerOcrScan(file, tempUrl);
     }
   };
 
   // --- 2. SUBMIT REPORT & UPLOAD IMAGE TO SUPABASE ---
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    let formattedDate = getFormattedTodayDate();
-    if (formData.dateIso) {
-      const [year, month, day] = formData.dateIso.split('-');
-      formattedDate = `${day}-${month}-${year}`;
-    }
-
-    let publicImageUrl = null;
-
-    // Upload image to Supabase Storage if present
-    if (formData.file) {
-      const fileExt = formData.file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('prescriptions')
-        .upload(fileName, formData.file);
-
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage
-          .from('prescriptions')
-          .getPublicUrl(fileName);
-        publicImageUrl = urlData.publicUrl;
+    try {
+      let formattedDate = getFormattedTodayDate();
+      if (formData.dateIso) {
+        const [year, month, day] = formData.dateIso.split('-');
+        formattedDate = `${day}-${month}-${year}`;
       }
-    }
 
-    const newRecord = {
-      title: formData.title || 'Uploaded Prescription',
-      doctor: formData.doctor.trim() || 'Not Specified',
-      category: formData.category || 'General',
-      record_type: formData.recordType,
-      date: formattedDate,
-      description: formData.description || 'User uploaded prescription photo.',
-      status: 'Uploaded',
-      image_url: publicImageUrl
-    };
+      let publicImageUrl = null;
 
-    // Save record row in Supabase PostgreSQL
-    const { data, error } = await supabase
-      .from('prescriptions')
-      .insert([newRecord])
-      .select();
+      // Upload image to Supabase Storage if present
+      if (formData.file) {
+        const fileExt = formData.file.name.split('.').pop().toLowerCase();
+        const sanitizedFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
 
-    if (!error && data) {
-      const createdItem = {
-        ...data[0],
-        recordType: data[0].record_type,
-        imageUrl: data[0].image_url
+        const { error: uploadError } = await supabase.storage
+          .from('prescriptions')
+          .upload(sanitizedFileName, formData.file);
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('prescriptions')
+            .getPublicUrl(sanitizedFileName);
+          publicImageUrl = urlData.publicUrl;
+        } else {
+          console.error('Storage upload error:', uploadError.message);
+        }
+      }
+
+      const newRecord = {
+        title: formData.title.trim() || 'Uploaded Prescription',
+        doctor: formData.doctor.trim() || 'Not Specified',
+        category: formData.category.trim() || 'General',
+        record_type: formData.recordType,
+        date: formattedDate,
+        description: formData.description.trim() || 'User uploaded prescription photo.',
+        status: 'Uploaded',
+        image_url: publicImageUrl
       };
 
-      setReports([createdItem, ...reports]);
-      setSelectedReport(createdItem);
-      resetModal();
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .insert([newRecord])
+        .select();
+
+      if (!error && data && data.length > 0) {
+        const createdItem = {
+          ...data[0],
+          recordType: data[0].record_type,
+          imageUrl: data[0].image_url
+        };
+
+        setReports((prev) => [createdItem, ...prev]);
+        setSelectedReport(createdItem);
+        resetModal();
+      }
+    } catch (err) {
+      console.error('Form submit error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const resetModal = () => {
+    if (formData.imageUrl && formData.imageUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(formData.imageUrl);
+    }
     setIsModalOpen(false);
     setIsScanning(false);
     setScanProgress(0);
     setScanComplete(false);
-    setFormData({
-      title: '',
-      doctor: '',
-      recordType: 'Prescription',
-      category: 'General',
-      dateIso: getIsoTodayDate(),
-      description: '',
-      file: null,
-      fileName: '',
-      imageUrl: ''
-    });
+    setFormData(initialFormState);
   };
 
   // --- 3. DELETE FROM SUPABASE ---
@@ -201,7 +217,7 @@ export default function Prescriptions() {
     const { error } = await supabase.from('prescriptions').delete().eq('id', id);
 
     if (!error) {
-      setReports(reports.filter((r) => r.id !== id));
+      setReports((prev) => prev.filter((r) => r.id !== id));
       if (selectedReport?.id === id) setSelectedReport(null);
     }
   };
@@ -270,7 +286,8 @@ export default function Prescriptions() {
             All Reports ({filteredReports.length})
           </h2>
           {loading ? (
-            <div className="bg-white p-8 rounded-2xl text-center border border-gray-200 text-gray-400 text-sm">
+            <div className="bg-white p-8 rounded-2xl text-center border border-gray-200 text-gray-400 text-sm flex items-center justify-center gap-2">
+              <Loader2 className="animate-spin" size={18} />
               Loading records...
             </div>
           ) : filteredReports.length === 0 ? (
@@ -303,7 +320,7 @@ export default function Prescriptions() {
                       e.stopPropagation();
                       handleDelete(item.id);
                     }}
-                    className="text-gray-400 hover:text-red-500 p-1"
+                    className="text-gray-400 hover:text-red-500 p-1 transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -503,16 +520,18 @@ export default function Prescriptions() {
                 <button
                   type="button"
                   onClick={resetModal}
-                  className="px-4 py-2 border rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 border rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isScanning}
-                  className="px-4 py-2 bg-[#3b4e34] text-white rounded-xl text-xs font-semibold hover:bg-[#2d3c28] disabled:opacity-50"
+                  disabled={isScanning || isSubmitting}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#3b4e34] text-white rounded-xl text-xs font-semibold hover:bg-[#2d3c28] disabled:opacity-50"
                 >
-                  Upload Report
+                  {isSubmitting && <Loader2 className="animate-spin" size={14} />}
+                  {isSubmitting ? 'Uploading...' : 'Upload Report'}
                 </button>
               </div>
             </form>

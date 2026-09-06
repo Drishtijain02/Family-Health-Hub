@@ -12,7 +12,6 @@ import Timeline from "./components/Timeline/Timeline";
 import Reminders from "./Reminders/Reminders";
 import Prescriptions from "./components/Prescriptions";
 import HealthCard from "./components/HealthCard";
-import { Pill, CreditCard } from "lucide-react";
 
 const avatarOptions = ["👨🏻", "👩🏻", "👦🏻", "👧🏻", "👴🏻", "👵🏻"];
 
@@ -28,7 +27,7 @@ function getAvatarForRelation(relation) {
   }
 
   if (value.includes("daughter")) return "👧🏻";
-  if (value.includes("son")) return "👦🏻";
+  if (value.includes("son")) return "👦🏻";ī
 
   if (
     value.includes("grandmother") ||
@@ -105,7 +104,6 @@ function DashboardApp() {
   const [editEmergencyContact, setEditEmergencyContact] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
-  const [activeTab, setActiveTab] = useState("dashboard");
 
   const refreshDashboardMedicalReports = async (member = selectedMember) => {
     if (!member) {
@@ -734,59 +732,6 @@ function DashboardApp() {
     );
   }
 
-  if (activeTab === "prescriptions" || activeTab === "healthCard") {
-    return (
-      <div className="min-h-screen bg-[#f8f8f5]">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#3b4e34] flex items-center justify-center text-white font-bold text-lg">
-                H
-              </div>
-              <span className="font-bold text-gray-900 text-lg tracking-tight">HealthHub</span>
-            </div>
-
-            <nav className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
-              <button
-                onClick={() => setActiveTab("dashboard")}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-gray-600 hover:text-gray-900"
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab("prescriptions")}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  activeTab === "prescriptions"
-                    ? "bg-white text-[#3b4e34] shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <Pill size={16} />
-                Prescriptions
-              </button>
-
-              <button
-                onClick={() => setActiveTab("healthCard")}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                  activeTab === "healthCard"
-                    ? "bg-white text-[#3b4e34] shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <CreditCard size={16} />
-                Health Card
-              </button>
-            </nav>
-          </div>
-        </header>
-
-        <main className="py-4">
-          {activeTab === "prescriptions" ? <Prescriptions /> : <HealthCard />}
-        </main>
-      </div>
-    );
-  }
-
   if (selectedMember) {
     return (
       <div className="app">
@@ -800,29 +745,6 @@ function DashboardApp() {
           </div>
 
           <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <nav className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl" style={{ display: "flex", alignItems: "center" }}>
-              <button
-                onClick={() => setActiveTab("dashboard")}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-gray-600 hover:text-gray-900"
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => setActiveTab("prescriptions")}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-gray-600 hover:text-gray-900"
-              >
-                <Pill size={16} />
-                Prescriptions
-              </button>
-              <button
-                onClick={() => setActiveTab("healthCard")}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all text-gray-600 hover:text-gray-900"
-              >
-                <CreditCard size={16} />
-                Health Card
-              </button>
-            </nav>
-
             <button
               className="switch-account"
               onClick={() => {
@@ -863,8 +785,11 @@ function DashboardApp() {
 
               <button
                 type="button"
-                className="nav-item"
-                onClick={() => setActiveTab("prescriptions")}
+                className={`nav-item ${activeModule === "prescriptions" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveModule("prescriptions");
+                  setShowProfile(false);
+                }}
               >
                 💊 Prescriptions
               </button>
@@ -903,7 +828,16 @@ function DashboardApp() {
                 🔔 Reminders
               </button>
 
-              <button className="nav-item">🚨 Emergency Card</button>
+              <button
+                type="button"
+                className={`nav-item ${activeModule === "emergency-card" ? "active" : ""}`}
+                onClick={() => {
+                  setActiveModule("emergency-card");
+                  setShowProfile(false);
+                }}
+              >
+                🚨 Emergency Card
+              </button>
               <button className="nav-item">⚙️ Settings</button>
             </div>
 
@@ -972,6 +906,10 @@ function DashboardApp() {
                 selectedMember={selectedMember}
                 onRecordsChanged={() => refreshDashboardMedicalReports(selectedMember)}
               />
+            ) : activeModule === "prescriptions" ? (
+              <Prescriptions />
+            ) : activeModule === "emergency-card" ? (
+              <HealthCard member={selectedMember} user={user} />
             ) : activeModule === "timeline" ? (
               <Timeline familyMemberId={selectedMember.id} />
             ) : activeModule === "reminders" ? (
@@ -1046,7 +984,15 @@ function DashboardApp() {
                     <span>🚨 EMERGENCY HEALTH CARD</span>
                     <h3>Emergency information</h3>
                     <p>Keep important health information accessible.</p>
-                    <button>View Full Card</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveModule("emergency-card");
+                        setShowProfile(false);
+                      }}
+                    >
+                      View Full Card
+                    </button>
                   </div>
                 </div>
 
