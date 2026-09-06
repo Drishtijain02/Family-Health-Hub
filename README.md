@@ -1,16 +1,56 @@
-# React + Vite
+# Family Health Hub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Family Health Hub is a family healthcare management platform designed to bring
+family health information, medical records, health summaries, reminders, and
+AI-assisted healthcare features into one place.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- 👨‍👩‍👧‍👦 Family and family-member management
+- 📄 Medical report upload and management
+- 🔐 Supabase authentication and data storage
+- 🤖 AI-powered health summaries
+- 💬 Health AI chatbot
+- 📊 Recent medical reports and health information
+- 🚨 Emergency health information
+- 🕐 Health timeline
+- 🔔 Health reminders
 
-## React Compiler
+## Technology Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React
+- Vite
+- Supabase
+- Express.js
+- OpenAI API
+- React Markdown
+- ESLint
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `src/components/` — Application components
+- `src/features/medical-records/` — Medical Records module
+- `src/lib/` — Shared services and Supabase integration
+- `server/` — Backend/server-side functionality
+- `supabase/` — Supabase configuration and database-related files
+
+## Contributors & Module Contributions
+
+### Avinandan Kumar — Medical Records
+
+Implemented the Medical Records module, including:
+
+- Medical Records user interface
+- Medical report upload functionality
+- Supabase Storage and database integration
+- Record categorization and metadata handling
+- View/open and delete functionality
+- Upload status and error handling
+- Medical report analysis interface
+- Integration support for connecting medical records with the
+  OCR and AI analysis pipeline
+
+### Project Team
+
+Family Health Hub was developed collaboratively, with different team members
+responsible for different application modules and integrations.

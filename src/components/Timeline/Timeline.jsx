@@ -119,6 +119,7 @@ function Timeline({ familyMemberId }) {
       .insert({
         family_member_id: familyMemberId,
         event_date: formData.date,
+        event_time: formData.time,
         event_type: formData.type,
         category: formData.category,
         title: formData.title.trim(),
