@@ -791,7 +791,7 @@ function DashboardApp() {
                   setShowProfile(false);
                 }}
               >
-                💊 Prescriptions
+                💊 Prescription
               </button>
 
               <button
@@ -907,7 +907,7 @@ function DashboardApp() {
                 onRecordsChanged={() => refreshDashboardMedicalReports(selectedMember)}
               />
             ) : activeModule === "prescriptions" ? (
-              <Prescriptions />
+              <Prescriptions selectedMember={selectedMember} />
             ) : activeModule === "emergency-card" ? (
               <HealthCard member={selectedMember} user={user} />
             ) : activeModule === "timeline" ? (

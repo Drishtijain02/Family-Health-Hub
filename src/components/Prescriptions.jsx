@@ -16,7 +16,7 @@ import {
 
 
 
-export default function Prescriptions() {
+export default function Prescriptions({ selectedMember }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,13 +71,20 @@ export default function Prescriptions() {
   // --- 1. FETCH REPORTS FROM SUPABASE ON MOUNT ---
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [selectedMember?.id]);
 
-  const fetchReports = async () => {
+  async function fetchReports() {
     setLoading(true);
+    if (!selectedMember?.id) {
+      setReports([]);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('prescriptions')
       .select('*')
+      .eq('family_member_id', selectedMember.id)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -89,7 +96,7 @@ export default function Prescriptions() {
       setReports(formattedData);
     }
     setLoading(false);
-  };
+  }
 
   // --- OCR SCANNING & IMAGE URL GENERATION ---
   const triggerOcrScan = (file, tempUrl) => {
@@ -176,6 +183,7 @@ export default function Prescriptions() {
       }
 
       const newRecord = {
+        family_member_id: selectedMember.id,
         title: formData.title.trim() || 'Uploaded Prescription',
         doctor: formData.doctor.trim() || 'Not Specified',
         category: formData.category.trim() || 'General',
@@ -233,7 +241,11 @@ export default function Prescriptions() {
 
   // --- 3. DELETE FROM SUPABASE ---
   const handleDelete = async (id) => {
-    const { error } = await supabase.from('prescriptions').delete().eq('id', id);
+    const { error } = await supabase
+      .from('prescriptions')
+      .delete()
+      .eq('id', id)
+      .eq('family_member_id', selectedMember.id);
 
     if (!error) {
       setReports((prev) => prev.filter((r) => r.id !== id));
@@ -258,7 +270,7 @@ export default function Prescriptions() {
       {/* Top Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Medical Reports & Prescriptions</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Prescription</h1>
           <p className="text-sm text-gray-500">All your medical documents in one place</p>
         </div>
         <button
