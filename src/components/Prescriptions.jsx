@@ -270,7 +270,7 @@ export default function Prescriptions({ selectedMember }) {
       {/* Top Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Prescription</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Prescriptions</h1>
           <p className="text-sm text-gray-500">All your medical documents in one place</p>
         </div>
         <button

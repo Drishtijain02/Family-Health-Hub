@@ -77,6 +77,7 @@ function DashboardApp() {
   const [activeModule, setActiveModule] = useState("dashboard");
   const [selectedMember, setSelectedMember] = useState(null);
   const [dashboardMedicalReports, setDashboardMedicalReports] = useState([]);
+  const [dashboardPrescriptions, setDashboardPrescriptions] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [membersError, setMembersError] = useState("");
   const [authLoading, setAuthLoading] = useState(true);
@@ -256,7 +257,30 @@ function DashboardApp() {
       }
     }
 
+    async function loadDashboardPrescriptions() {
+      if (!selectedMember) {
+        if (!cancelled) setDashboardPrescriptions([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("prescriptions")
+        .select("id, title, doctor, category, date, record_type, created_at")
+        .eq("family_member_id", selectedMember.id)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.warn("Unable to load dashboard prescriptions:", error);
+        if (!cancelled) setDashboardPrescriptions([]);
+        return;
+      }
+
+      if (!cancelled) setDashboardPrescriptions(data || []);
+    }
+
     void loadDashboardMedicalReports();
+    void loadDashboardPrescriptions();
 
     return () => {
       cancelled = true;
@@ -1047,7 +1071,7 @@ function DashboardApp() {
                     <AIHealthSummary
                       member={selectedMember}
                       medicalReports={dashboardMedicalReports}
-                      prescriptions={[]}
+                      prescriptions={dashboardPrescriptions}
                       healthRecords={[]}
                     />
                   </section>
@@ -1119,23 +1143,23 @@ function DashboardApp() {
                       <span>View All</span>
                     </div>
 
-                    <div className="report">
-                      <span>💊</span>
-                      <div>
-                        <strong>Vitamin D</strong>
-                        <p>Daily supplement</p>
+                    {dashboardPrescriptions.length > 0 ? (
+                      dashboardPrescriptions.map((prescription) => (
+                        <div className="report" key={prescription.id}>
+                          <span>💊</span>
+                          <div>
+                            <strong>{prescription.title}</strong>
+                            <p>{prescription.doctor || prescription.category || "Prescription"}</p>
+                          </div>
+                          <b>›</b>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="dashboard-empty-reports">
+                        <p style={{ fontWeight: 400 }}>No prescriptions yet</p>
+                        <p>Upload a prescription to see it here.</p>
                       </div>
-                      <b>›</b>
-                    </div>
-
-                    <div className="report">
-                      <span>💊</span>
-                      <div>
-                        <strong>Calcium Tablet</strong>
-                        <p>As prescribed</p>
-                      </div>
-                      <b>›</b>
-                    </div>
+                    )}
                   </section>
 
                   {/* TIMELINE */}
