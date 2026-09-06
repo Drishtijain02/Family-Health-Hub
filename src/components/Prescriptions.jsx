@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../lib/supabase';
 import {
   Upload,
   Search,
@@ -24,6 +24,7 @@ export default function Prescriptions() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   // OCR Scanning State
   const [isScanning, setIsScanning] = useState(false);
@@ -138,6 +139,9 @@ export default function Prescriptions() {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError('');
+
+    let uploadedStoragePath = null;
 
     try {
       let formattedDate = getFormattedTodayDate();
@@ -152,19 +156,23 @@ export default function Prescriptions() {
       if (formData.file) {
         const fileExt = formData.file.name.split('.').pop().toLowerCase();
         const sanitizedFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+        uploadedStoragePath = sanitizedFileName;
 
         const { error: uploadError } = await supabase.storage
           .from('prescriptions')
-          .upload(sanitizedFileName, formData.file);
+          .upload(sanitizedFileName, formData.file, {
+            upsert: false,
+            contentType: formData.file.type || undefined
+          });
 
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('prescriptions')
-            .getPublicUrl(sanitizedFileName);
-          publicImageUrl = urlData.publicUrl;
-        } else {
-          console.error('Storage upload error:', uploadError.message);
+        if (uploadError) {
+          throw new Error(`File upload failed: ${uploadError.message}`);
         }
+
+        const { data: urlData } = supabase.storage
+          .from('prescriptions')
+          .getPublicUrl(sanitizedFileName);
+        publicImageUrl = urlData.publicUrl;
       }
 
       const newRecord = {
@@ -183,19 +191,29 @@ export default function Prescriptions() {
         .insert([newRecord])
         .select();
 
-      if (!error && data && data.length > 0) {
-        const createdItem = {
-          ...data[0],
-          recordType: data[0].record_type,
-          imageUrl: data[0].image_url
-        };
-
-        setReports((prev) => [createdItem, ...prev]);
-        setSelectedReport(createdItem);
-        resetModal();
+      if (error) {
+        throw new Error(`Prescription could not be saved: ${error.message}`);
       }
+
+      if (!data || data.length === 0) {
+        throw new Error('Prescription was uploaded but no saved record was returned.');
+      }
+
+      const createdItem = {
+        ...data[0],
+        recordType: data[0].record_type,
+        imageUrl: data[0].image_url
+      };
+
+      setReports((prev) => [createdItem, ...prev]);
+      setSelectedReport(createdItem);
+      resetModal();
     } catch (err) {
       console.error('Form submit error:', err);
+      if (uploadedStoragePath) {
+        await supabase.storage.from('prescriptions').remove([uploadedStoragePath]);
+      }
+      setSubmitError(err.message || 'Unable to upload prescription. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -209,6 +227,7 @@ export default function Prescriptions() {
     setIsScanning(false);
     setScanProgress(0);
     setScanComplete(false);
+    setSubmitError('');
     setFormData(initialFormState);
   };
 
@@ -405,6 +424,12 @@ export default function Prescriptions() {
             </div>
 
             <form onSubmit={handleFormSubmit} className="space-y-4">
+              {submitError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {submitError}
+                </div>
+              )}
+
               {/* File Upload / OCR Scan Box */}
               <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-[#3b4e34] transition-all bg-gray-50/50 overflow-hidden">
                 {isScanning ? (
