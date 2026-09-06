@@ -1,184 +1,1822 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+* {
+  box-sizing: border-box;
 }
 
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
 }
 
-#center {
+body {
+  font-family: Arial, sans-serif;
+  background: #f7f9f6;
+  color: #26332d;
+}
+
+button {
+  font: inherit;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.header {
+  height: 76px;
+  padding: 0 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e9e4;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #607b62;
+  color: white;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.brand h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.brand p {
+  margin: 3px 0 0;
+  color: #7c877f;
+  font-size: 11px;
+}
+
+.switch-account {
+  border: 1px solid #dce2dc;
+  background: white;
+  padding: 10px 16px;
+  border-radius: 9px;
+  color: #526157;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.switch-account:hover {
+  background: #f3f6f2;
+  border-color: #bfcabd;
+}
+
+/* ========================================
+   PROFILE SELECTION
+   ======================================== */
+
+.profile-page {
+  min-height: calc(100vh - 76px);
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+  align-items: center;
+  justify-content: center;
+  padding: 50px 30px;
 }
 
-#next-steps {
+.welcome {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.welcome h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+.welcome p {
+  margin: 9px 0 0;
+  color: #7b867f;
+  font-size: 14px;
+}
+
+.profiles {
   display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  max-width: 1050px;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-}
-
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
-}
-
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
-}
-
-.ticks {
+.profile-card {
   position: relative;
+  width: 158px;
+  min-height: 184px;
+  padding: 20px 14px;
+  border: 1px solid #e0e6df;
+  border-radius: 15px;
+  background: white;
+  cursor: pointer;
+  transition: 0.2s ease;
+  box-shadow: 0 3px 12px rgba(35, 50, 40, 0.04);
+}
+
+.profile-card:hover {
+  transform: translateY(-4px);
+  border-color: #a6b7a3;
+  box-shadow: 0 9px 22px rgba(35, 50, 40, 0.09);
+}
+
+.avatar {
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #eef3ec;
+  font-size: 40px;
+}
+
+.profile-card h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.profile-card p {
+  margin: 6px 0 0;
+  color: #89938c;
+  font-size: 12px;
+}
+
+.add-card {
+  border-style: dashed;
+  background: #fbfcfa;
+}
+
+.add-icon {
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #edf2ea;
+  color: #607b62;
+  font-size: 32px;
+}
+
+.security {
+  margin-top: 30px;
+  color: #8a938d;
+  font-size: 11px;
+}
+
+/* ========================================
+   NEW DASHBOARD LAYOUT
+   ======================================== */
+
+.dashboard-layout {
+  display: flex;
+  min-height: calc(100vh - 76px);
+}
+
+/* ========================================
+   SIDEBAR
+   ======================================== */
+
+.sidebar {
+  width: 205px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e3e8e1;
+  padding: 22px 12px;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nav-item {
   width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 11px 13px;
+  border-radius: 8px;
+  color: #4f5d54;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
+.nav-item:hover {
+  background: #f2f5f1;
+  color: #3f5143;
+}
+
+.nav-item.active {
+  background: #e5eee2;
+  color: #3f5c43;
+  font-weight: 600;
+}
+
+.nav-item:hover {
+  background: #f2f5f1;
+  color: #3f5143;
+}
+
+.nav-item.active {
+  background: #e8efe6;
+  color: #405843;
+  font-weight: 600;
+}
+
+/* FAMILY MEMBERS */
+
+.sidebar-family {
+  margin-top: 27px;
+  padding-top: 19px;
+  border-top: 1px solid #edf0ec;
+}
+
+.sidebar-family > p {
+  margin: 0 0 9px;
+  padding-left: 9px;
+  color: #89938c;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.family-mini {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: none;
+  background: transparent;
+  padding: 8px 9px;
+  border-radius: 8px;
+  text-align: left;
+  color: #4f5d54;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-size: 13px;
+}
+
+.family-mini:hover {
+  background: #f3f6f1;
+}
+
+.family-mini.current {
+  background: #e5eee2;
+  color: #3f5c43;
+  font-weight: 600;
+}
+
+.family-mini > span:first-child {
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  background: #eef3ec;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.family-mini small {
+  display: block;
+  margin-top: 2px;
+  color: #89938c;
+  font-size: 10px;
+  font-weight: normal;
+}
+
+.family-mini:hover {
+  background: #f3f6f1;
+}
+
+.family-mini.current {
+  background: #eaf1e8;
+  color: #3f5c43;
+  font-weight: 600;
+}
+
+.family-mini > span:first-child {
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  background: #eef3ec;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.family-mini small {
+  display: block;
+  margin-top: 2px;
+  color: #89938c;
+  font-size: 9px;
+  font-weight: normal;
+}
+
+/* ========================================
+   MAIN DASHBOARD
+   ======================================== */
+
+.dashboard-main {
+  flex: 1;
+  min-width: 0;
+  max-width: 1250px;
+  margin: 0 auto;
+  padding: 32px 38px 55px;
+}
+
+/* PROFILE HEADER */
+
+.dashboard-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.dashboard-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #eef3ec;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+}
+
+.dashboard-person h1 {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+}
+
+.dashboard-person p {
+  margin: 5px 0 0;
+  color: #748078;
+  font-size: 13px;
+}
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.profile-actions .profile-details-button {
+  margin-top: 0;
+}
+
+.status {
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: #edf5eb;
+  color: #607b62;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+/* ========================================
+   HEALTH CARDS
+   ======================================== */
+
+.health-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1.35fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.health-card,
+.emergency-card {
+  min-height: 145px;
+  background: white;
+  border: 1px solid #e3e8e1;
+  border-radius: 13px;
+  padding: 17px;
+  box-shadow: 0 2px 9px rgba(35, 50, 40, 0.035);
+}
+
+.health-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.health-card span,
+.emergency-card > span {
+  color: #738078;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.health-card strong {
+  font-size: 20px;
+  font-weight: 650;
+  margin-top: 3px;
+}
+
+.health-card strong {
+  font-size: 17px;
+  margin-top: 2px;
+}
+
+.emergency-card {
+  background: #354039;
+  color: white;
+}
+
+.emergency-card > span {
+  color: #d7dfd8;
+}
+
+.emergency-card h3 {
+  margin: 11px 0 5px;
+  font-size: 15px;
+}
+
+.emergency-card p {
+  margin: 0 0 12px;
+  color: #d2d9d4;
+  font-size: 11px;
+}
+
+.emergency-card button {
+  border: none;
+  background: #91a98c;
+  color: white;
+  border-radius: 7px;
+  padding: 8px 13px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.emergency-card button:hover {
+  background: #a2b99e;
+}
+
+/* ========================================
+   DASHBOARD GRID
+   ======================================== */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 17px;
+  margin-bottom: 17px;
+}
+
+.panel {
+  min-width: 0;
+  background: white;
+  border: 1px solid #e3e8e1;
+  border-radius: 13px;
+  padding: 21px;
+  box-shadow: 0 2px 9px rgba(35, 50, 40, 0.035);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 13px;
+}
+
+.panel-title h2,
+.panel h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  color: #26332d;
+}
+
+.panel-title span {
+  color: #607b62;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* ========================================
+   AI SUMMARY
+   ======================================== */
+
+.ai-panel {
+  background: #f1f5ed;
+}
+
+.ai-status {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  background: #f9fbf7;
+  border-radius: 9px;
+}
+
+.ai-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #607b62;
+  color: white;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.ai-status strong {
+  font-size: 12px;
+}
+
+.ai-status p {
+  margin: 4px 0 0;
+  color: #7b867f;
+  font-size: 10px;
+}
+
+.attention {
+  margin-top: 11px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #806a3e;
+  font-size: 11px;
+}
+
+.attention p {
+  margin: 5px 0 0 18px;
+  color: #7b867f;
+  font-size: 10px;
+}
+
+.ai-button {
+  margin-top: 12px;
+  border: none;
+  background: #607b62;
+  color: white;
+  padding: 9px 13px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.ai-button:hover {
+  background: #526b54;
+}
+
+/* ========================================
+   REPORTS
+   ======================================== */
+
+.report {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 0;
+  border-top: 1px solid #edf0ec;
+}
+
+.report:first-of-type {
+  border-top: none;
+}
+
+.report > span {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #f0f4ee;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 17px;
+}
+
+.report strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.report p {
+  margin: 4px 0 0;
+  color: #7d8981;
+  font-size: 11px;
+}
+
+.report > b {
+  margin-left: auto;
+  color: #607b62;
+  font-size: 18px;
+  font-weight: normal;
+}
+
+/* ========================================
+   TIMELINE
+   ======================================== */
+
+.timeline-item {
+  padding: 10px 0 10px 16px;
+  margin-left: 5px;
+  border-left: 2px solid #dbe5d9;
+}
+
+.timeline-item strong {
+  font-size: 13px;
+}
+
+.timeline-item p {
+  margin: 5px 0 0;
+  color: #7b867f;
+  font-size: 11px;
+}
+
+/* ========================================
+   REMINDERS
+   ======================================== */
+
+.reminder {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 0;
+  border-top: 1px solid #edf0ec;
+}
+
+.reminder:first-of-type {
+  border-top: none;
+}
+
+.reminder > span {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f0f4ee;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.reminder strong {
+  font-size: 12px;
+}
+
+.reminder p {
+  margin: 3px 0 0;
+  color: #89938c;
+  font-size: 10px;
+}
+
+.reminder small {
+  margin-left: auto;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #edf5eb;
+  color: #607b62;
+  font-size: 9px;
+}
+
+/* ========================================
+   HEALTH AI CHAT
+   ======================================== */
+
+.chat-panel {
+  background: white;
+}
+
+.chat-message {
+  padding: 12px;
+  border-radius: 9px;
+  background: #f1f5ed;
+}
+
+.chat-message strong {
+  font-size: 11px;
+}
+
+.chat-message p {
+  margin: 6px 0 0;
+  color: #6f7b72;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.chat-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 11px;
+  padding: 7px 8px 7px 11px;
+  border: 1px solid #dfe5de;
+  border-radius: 8px;
+  color: #9aa39d;
+  font-size: 10px;
+}
+
+.chat-input button {
+  width: 27px;
+  height: 27px;
+  border: none;
+  border-radius: 50%;
+  background: #607b62;
+  color: white;
+  cursor: pointer;
+}
+
+/* ========================================
+   ADD MEMBER FORM
+   ======================================== */
+
+.add-member-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 40, 34, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.add-member-form {
+  position: relative;
+  width: 400px;
+  padding: 30px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 20px 50px rgba(30, 40, 34, 0.2);
+}
+
+.add-member-form h2 {
+  margin: 0;
+  color: #26332d;
+}
+
+.add-member-form > p {
+  margin: 7px 0 25px;
+  color: #7b867f;
+  font-size: 14px;
+}
+
+.add-member-form label {
+  display: block;
+  margin: 15px 0 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #526157;
+}
+
+.add-member-form input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #dce2dc;
+  border-radius: 9px;
+  outline: none;
+  font-size: 14px;
+}
+
+.add-member-form input:focus {
+  border-color: #607b62;
+}
+
+.close-form {
+  position: absolute;
+  top: 15px;
+  right: 17px;
+  border: none;
+  background: none;
+  font-size: 25px;
+  color: #7b867f;
+  cursor: pointer;
+}
+
+.avatar-options {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.avatar-option {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #e0e6df;
+  border-radius: 50%;
+  background: #eef3ec;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.avatar-option:hover {
+  transform: scale(1.05);
+}
+
+.avatar-selected {
+  border: 2px solid #607b62;
+  box-shadow: 0 4px 12px rgba(96, 123, 98, 0.2);
+}
+
+.add-member-submit {
+  width: 100%;
+  margin-top: 25px;
+  padding: 12px;
+  border: none;
+  border-radius: 9px;
+  background: #607b62;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-member-submit:hover {
+  background: #526b54;
+}
+
+/* ========================================
+   FAMILY PROFILE DETAILS
+   ======================================== */
+
+.profile-details {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 40px 30px 70px;
+}
+
+.back-button {
+  border: none;
+  background: transparent;
+  color: #607b62;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 30px;
+}
+
+.profile-title {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+
+.large-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #eef3ec;
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+}
+
+.profile-title h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.profile-title p {
+  margin: 6px 0 0;
+  color: #7b867f;
+}
+
+.info-section {
+  background: white;
+  border: 1px solid #e0e6df;
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 3px 12px rgba(35, 50, 40, 0.05);
+}
+
+.info-section h2 {
+  margin: 0 0 22px;
+  font-size: 19px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.info-grid div {
+  padding: 15px;
+  background: #f8faf7;
+  border-radius: 10px;
+}
+
+.info-grid span {
+  display: block;
+  color: #7b867f;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.info-grid strong {
+  color: #26332d;
+}
+
+.edit-profile-button,
+.profile-details-button {
+  border: none;
+  border-radius: 9px;
+  background: #607b62;
+  color: white;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.profile-details-button {
+  margin-top: 15px;
+}
+
+.edit-profile-button:hover,
+.profile-details-button:hover {
+  background: #526b54;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 1000px) {
+  .sidebar {
+    width: 185px;
   }
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
+  .dashboard-main {
+    padding: 24px 20px 40px;
   }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
+
+  .health-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .dashboard-layout {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e3e8e1;
+    padding: 10px;
+  }
+
+  .sidebar-section {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .nav-item {
+    white-space: nowrap;
+    width: auto;
+  }
+
+  .sidebar-family {
+    display: none;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding: 0 18px;
+  }
+
+  .brand p {
+    display: none;
+  }
+
+  .profile-page {
+    padding: 35px 15px;
+  }
+
+  .welcome h1 {
+    font-size: 25px;
+  }
+
+  .profiles {
+    gap: 10px;
+  }
+
+  .profile-card {
+    width: 140px;
+  }
+
+  .dashboard-main {
+    padding: 20px 15px 35px;
+  }
+
+  .dashboard-profile-header {
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .health-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-details {
+    padding: 25px 18px;
+  }
+}
+/* =========================================================
+   HEALTHHUB UI UPGRADE
+   Visual upgrade only — no features changed
+   ========================================================= */
+
+/* ---------- GLOBAL LOOK ---------- */
+
+body {
+  font-family:
+    Inter,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+  background: #f6f8f5;
+  color: #26332d;
+  font-size: 14px;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ---------- HEADER ---------- */
+
+.header {
+  height: 72px;
+  padding: 0 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #e6ebe5;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #607b62;
+  font-size: 20px;
+}
+
+.brand {
+  gap: 11px;
+}
+
+.brand h2 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.brand p {
+  font-size: 11px;
+}
+
+/* ---------- SWITCH PROFILE ---------- */
+
+.switch-account {
+  padding: 10px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.switch-account:hover {
+  background: #f2f6f1;
+  border-color: #bdcabc;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar {
+  width: 218px;
+  padding: 22px 13px;
+  background: #ffffff;
+  border-right: 1px solid #e1e7e0;
+}
+
+.sidebar-section {
+  gap: 4px;
+}
+
+.nav-item {
+  padding: 12px 13px;
+  border-radius: 9px;
+  color: #536158;
+  font-size: 14px;
+  font-weight: 450;
+  transition: all 0.18s ease;
+}
+
+.nav-item:hover {
+  background: #f2f6f1;
+  color: #38503d;
+}
+
+.nav-item.active {
+  background: #e5eee2;
+  color: #38523c;
+  font-weight: 650;
+}
+
+/* Family members */
+
+.sidebar-family {
+  margin-top: 30px;
+  padding-top: 21px;
+}
+
+.sidebar-family > p {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #89938c;
+  padding-left: 10px;
+  margin-bottom: 11px;
+}
+
+.family-mini {
+  padding: 9px 10px;
+  border-radius: 9px;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.family-mini > span:first-child {
+  width: 32px;
+  height: 32px;
+  font-size: 17px;
+}
+
+.family-mini small {
+  font-size: 10px;
+  margin-top: 3px;
+}
+
+.family-mini.current {
+  background: #e7efe4;
+  color: #38523c;
+}
+
+/* =========================================================
+   MAIN DASHBOARD
+   ========================================================= */
+
+.dashboard-main {
+  max-width: none;
+  padding: 34px 42px 60px;
+}
+
+/* ---------- PROFILE HEADER ---------- */
+
+.dashboard-profile-header {
+  margin-bottom: 24px;
+}
+
+.dashboard-person {
+  gap: 13px;
+}
+
+.dashboard-avatar {
+  width: 50px;
+  height: 50px;
+  background: #edf3eb;
+  font-size: 27px;
+}
+
+.dashboard-person h1 {
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+}
+
+.dashboard-person p {
+  margin-top: 5px;
+  font-size: 14px;
+  color: #748078;
+}
+
+.profile-actions {
+  gap: 14px;
+}
+
+.profile-details-button {
+  padding: 11px 18px;
+  font-size: 13px;
+}
+
+.status {
+  padding: 9px 13px;
+  font-size: 11px;
+}
+
+/* =========================================================
+   TOP HEALTH CARDS
+   ========================================================= */
+
+.health-cards {
+  grid-template-columns: 1fr 1fr 1fr 1.35fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.health-card,
+.emergency-card {
+  min-height: 154px;
+  padding: 19px;
+  border-radius: 14px;
+  border: 1px solid #e1e7df;
+  box-shadow: 0 2px 8px rgba(35, 50, 40, 0.035);
+}
+
+.health-card {
+  gap: 12px;
+}
+
+.health-card span,
+.emergency-card > span {
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: #718078;
+}
+
+.health-card strong {
+  font-size: 21px;
+  font-weight: 700;
+  margin-top: 3px;
+}
+
+/* Emergency */
+
+.emergency-card {
+  background: #354139;
+  padding: 20px;
+}
+
+.emergency-card h3 {
+  margin: 13px 0 6px;
+  font-size: 16px;
+}
+
+.emergency-card p {
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+
+.emergency-card button {
+  padding: 9px 14px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* =========================================================
+   THREE-COLUMN CONTENT
+   This is the BIGGEST visual difference from your current UI.
+   ========================================================= */
+
+.dashboard-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+/* Every panel gets a cleaner healthcare-dashboard appearance */
+
+.panel {
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid #e1e7df;
+  box-shadow: 0 2px 9px rgba(35, 50, 40, 0.035);
+}
+
+/* Larger headings */
+
+.panel-title {
+  margin-bottom: 14px;
+}
+
+.panel-title h2,
+.panel h2 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.15px;
+}
+
+.panel-title span {
+  font-size: 11px;
+}
+
+/* =========================================================
+   AI HEALTH SUMMARY
+   ========================================================= */
+
+.ai-panel {
+  background: #f0f5ec;
+  border-color: #dfe8da;
+}
+
+.ai-status {
+  padding: 14px;
+  border-radius: 10px;
+  background: #fafcf9;
+}
+
+.ai-circle {
+  width: 39px;
+  height: 39px;
+  background: #607b62;
+  font-size: 15px;
+}
+
+.ai-status strong {
+  font-size: 13px;
+}
+
+.ai-status p {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.attention {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.attention p {
+  font-size: 11px;
+}
+
+.ai-button {
+  margin-top: 13px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+/* =========================================================
+   REPORTS / PRESCRIPTIONS
+   ========================================================= */
+
+.report {
+  padding: 13px 0;
+  gap: 12px;
+}
+
+.report > span {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-size: 18px;
+}
+
+.report strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.report p {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.report > b {
+  font-size: 19px;
+  color: #607b62;
+}
+
+/* =========================================================
+   TIMELINE
+   ========================================================= */
+
+.timeline-item {
+  padding: 12px 0 12px 18px;
+  margin-left: 5px;
+  border-left: 2px solid #d7e2d5;
+}
+
+.timeline-item strong {
+  font-size: 13px;
+}
+
+.timeline-item p {
+  font-size: 11px;
+}
+
+/* =========================================================
+   REMINDERS
+   ========================================================= */
+
+.reminder {
+  padding: 12px 0;
+}
+
+.reminder > span {
+  width: 35px;
+  height: 35px;
+  border-radius: 9px;
+}
+
+.reminder strong {
+  font-size: 13px;
+}
+
+.reminder p {
+  font-size: 11px;
+}
+
+.reminder small {
+  padding: 5px 8px;
+  font-size: 9px;
+}
+
+/* =========================================================
+   HEALTH AI CHAT
+   ========================================================= */
+
+.chat-panel {
+  background: #ffffff;
+}
+
+.chat-message {
+  padding: 14px;
+  border-radius: 10px;
+  background: #f1f5ed;
+}
+
+.chat-message strong {
+  font-size: 12px;
+}
+
+.chat-message p {
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.chat-input {
+  margin-top: 12px;
+  padding: 8px 9px 8px 12px;
+  border-radius: 9px;
+  font-size: 11px;
+}
+
+.chat-input button {
+  width: 29px;
+  height: 29px;
+}
+
+/* =========================================================
+   PROFILE SELECTION PAGE
+   ========================================================= */
+
+.profile-page {
+  background: #f8faf7;
+}
+
+.welcome h1 {
+  font-size: 32px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+}
+
+.welcome p {
+  font-size: 15px;
+}
+
+.profiles {
+  gap: 18px;
+}
+
+.profile-card {
+  width: 165px;
+  min-height: 195px;
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.profile-card:hover {
+  transform: translateY(-5px);
+  border-color: #9caf9b;
+}
+
+.profile-card h3 {
+  font-size: 16px;
+}
+
+.profile-card p {
+  font-size: 13px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+  .sidebar {
+    width: 195px;
+  }
+
+  .dashboard-main {
+    padding: 28px 25px 50px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 800px) {
+
+  .dashboard-layout {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 10px;
+    border-right: none;
+    border-bottom: 1px solid #e1e7e0;
+  }
+
+  .sidebar-section {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .nav-item {
+    white-space: nowrap;
+    width: auto;
+  }
+
+  .sidebar-family {
+    display: none;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .health-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+}
+
+@media (max-width: 600px) {
+
+  .header {
+    padding: 0 18px;
+  }
+
+  .dashboard-main {
+    padding: 22px 15px 40px;
+  }
+
+  .dashboard-profile-header {
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .dashboard-person h1 {
+    font-size: 24px;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .health-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+/* =========================================================
+   HEALTHHUB — DELETE MEMBER UI
+   ========================================================= */
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.delete-member-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid #e3c8c3;
+  border-radius: 10px;
+  background: #fff8f6;
+  color: #9a5147;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.15s ease,
+    box-shadow 0.18s ease;
+}
+
+.delete-member-button:hover {
+  background: #fff0ed;
+  border-color: #dba9a1;
+  color: #873f36;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(126, 70, 61, 0.1);
+}
+
+.delete-member-button:active {
+  transform: translateY(0);
+}
+
+/* Delete confirmation modal */
+
+.member-delete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(31, 42, 35, 0.48);
+  backdrop-filter: blur(7px);
+}
+
+.member-delete-modal {
+  width: min(450px, 100%);
+  padding: 32px;
+  border: 1px solid #e4e8e1;
+  border-radius: 22px;
+  background: #fffefc;
+  box-shadow:
+    0 30px 90px rgba(26, 38, 30, 0.24),
+    0 5px 20px rgba(26, 38, 30, 0.08);
+  text-align: center;
+  animation: deleteModalIn 0.18s ease-out;
+}
+
+@keyframes deleteModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.delete-modal-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #fff0ed;
+  color: #a45248;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.member-delete-modal h2 {
+  margin: 0 0 10px;
+  color: #2f3c34;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.member-delete-modal p {
+  margin: 0 auto;
+  max-width: 360px;
+  color: #77837b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.member-delete-modal p strong {
+  color: #59665d;
+}
+
+.delete-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.delete-modal-actions button {
+  flex: 1;
+  min-height: 46px;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.14s ease;
+}
+
+.delete-cancel-button {
+  border: 1px solid #dbe2d9;
+  background: #f8faf7;
+  color: #536158;
+}
+
+.delete-cancel-button:hover:not(:disabled) {
+  background: #eef3ec;
+  border-color: #cbd5c8;
+}
+
+.delete-confirm-button {
+  border: 1px solid #a9564b;
+  background: #a9564b;
+  color: white;
+}
+
+.delete-confirm-button:hover:not(:disabled) {
+  background: #91483f;
+  border-color: #91483f;
+  transform: translateY(-1px);
+}
+
+.delete-modal-actions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+@media (max-width: 600px) {
+  .profile-actions {
+    justify-content: flex-start;
+  }
+
+  .delete-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .member-delete-modal {
+    padding: 26px 21px;
   }
 }
