@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 
-dotenv.config({ path: "./.env" });
+dotenv.config({ path: "./server/.env" });
 
 const app = express();
 
