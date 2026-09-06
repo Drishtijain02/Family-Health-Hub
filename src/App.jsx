@@ -105,6 +105,9 @@ function DashboardApp() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
 
+  const [dashboardTimeline, setDashboardTimeline] = useState([]);
+  const [dashboardReminders, setDashboardReminders] = useState([]);
+
   const refreshDashboardMedicalReports = async (member = selectedMember) => {
     if (!member) {
       setDashboardMedicalReports([]);
@@ -117,6 +120,43 @@ function DashboardApp() {
     } catch (error) {
       console.warn("Unable to load dashboard medical reports:", error);
       setDashboardMedicalReports([]);
+    }
+  };
+
+  const loadDashboardTimelineAndReminders = async (memberId) => {
+    if (!memberId) {
+      setDashboardTimeline([]);
+      setDashboardReminders([]);
+      return;
+    }
+
+    const { data: timelineData, error: timelineError } = await supabase
+      .from("timeline_events")
+      .select("*")
+      .eq("family_member_id", memberId)
+      .order("event_date", { ascending: false })
+      .order("event_time", { ascending: false })
+      .limit(3);
+
+    if (timelineError) {
+      console.error("Dashboard timeline error:", timelineError);
+    } else {
+      setDashboardTimeline(timelineData || []);
+    }
+
+    const { data: reminderData, error: reminderError } = await supabase
+      .from("reminders")
+      .select("*")
+      .eq("family_member_id", memberId)
+      .eq("status", "pending")
+      .order("reminder_date", { ascending: true })
+      .order("reminder_time", { ascending: true })
+      .limit(3);
+
+    if (reminderError) {
+      console.error("Dashboard reminders error:", reminderError);
+    } else {
+      setDashboardReminders(reminderData || []);
     }
   };
 
@@ -222,6 +262,11 @@ function DashboardApp() {
       cancelled = true;
     };
   }, [selectedMember, activeModule]);
+  useEffect(() => {
+    if (activeModule === "dashboard" && selectedMember?.id) {
+      loadDashboardTimelineAndReminders(selectedMember.id);
+    }
+  }, [selectedMember?.id, activeModule]);
 
   async function loadFamilyMembers(userId) {
     setLoadingMembers(true);
@@ -876,6 +921,7 @@ function DashboardApp() {
             {membersError && (
               <div className="healthhub-alert healthhub-alert-error" role="alert">
                 <div className="healthhub-alert-icon">!</div>
+
                 <div>
                   <strong>Couldn't complete that action</strong>
                   <p>{membersError}</p>
@@ -1092,52 +1138,75 @@ function DashboardApp() {
                     </div>
                   </section>
 
-                  <section className="panel">
-                    <div className="panel-title">
-                      <h2>🕐 Health Timeline</h2>
-                      <span>View Full Timeline</span>
-                    </div>
+                  {/* TIMELINE */}
+<section className="panel">
+  <div className="panel-title">
+    <h2>🕐 Health Timeline</h2>
+    <span>View Full Timeline</span>
+  </div>
 
-                    <div className="timeline-item">
-                      <strong>Feb 24, 2025</strong>
-                      <p>Vitamin D test completed</p>
-                    </div>
+  {dashboardTimeline.length > 0 ? (
+    dashboardTimeline.map((event) => (
+      <div className="timeline-item" key={event.id}>
+        <strong>
+          {new Date(`${event.event_date}T00:00:00`).toLocaleDateString(
+            "en-IN",
+            {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }
+          )}
+        </strong>
+        <p>{event.title}</p>
+      </div>
+    ))
+  ) : (
+    <p>No timeline events yet.</p>
+  )}
+</section>
 
-                    <div className="timeline-item">
-                      <strong>Jan 22, 2025</strong>
-                      <p>CBC blood report added</p>
-                    </div>
+{/* REMINDERS */}
+<section className="panel">
+  <div className="panel-title">
+    <h2>🔔 Upcoming Reminders</h2>
+    <span>View All</span>
+  </div>
 
-                    <div className="timeline-item">
-                      <strong>Jan 05, 2025</strong>
-                      <p>ECG report added</p>
-                    </div>
-                  </section>
+  {dashboardReminders.length > 0 ? (
+    dashboardReminders.map((reminder) => (
+      <div className="reminder" key={reminder.id}>
+        <span>🔔</span>
 
-                  <section className="panel">
-                    <div className="panel-title">
-                      <h2>🔔 Upcoming Reminders</h2>
-                      <span>View All</span>
-                    </div>
+        <div>
+          <strong>{reminder.title}</strong>
+          <p>
+            {new Date(
+              `${reminder.reminder_date}T00:00:00`
+            ).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+            })}
 
-                    <div className="reminder">
-                      <span>💊</span>
-                      <div>
-                        <strong>Vitamin D</strong>
-                        <p>Today • 9:00 AM</p>
-                      </div>
-                      <small>Today</small>
-                    </div>
+            {reminder.reminder_time &&
+              ` • ${new Date(
+                `1970-01-01T${reminder.reminder_time}`
+              ).toLocaleTimeString("en-IN", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })}`}
+          </p>
+        </div>
 
-                    <div className="reminder">
-                      <span>👁️</span>
-                      <div>
-                        <strong>Eye Checkup</strong>
-                        <p>Next appointment</p>
-                      </div>
-                      <small>Upcoming</small>
-                    </div>
-                  </section>
+        <small>{reminder.reminder_type}</small>
+      </div>
+    ))
+  ) : (
+    <p>No upcoming reminders.</p>
+  )}
+</section>
+
                 </div>
 
                 <AIChatbot />
