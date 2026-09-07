@@ -9,7 +9,15 @@ import fitz  # PyMuPDF for fast digital text extraction
 from pdf2image import convert_from_bytes
 
 # Configure Tesseract path for Windows
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+import os
+import shutil
+
+if os.name == "nt":
+    pytesseract.pytesseract.tesseract_cmd = (
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    )
+else:
+    pytesseract.pytesseract.tesseract_cmd = shutil.which("tesseract") or "tesseract"
 import uvicorn
 
 app = FastAPI(title="HealthHub OCR Service")
@@ -86,9 +94,12 @@ async def extract_text(file: UploadFile = File(...)):
             # (If it's just a few characters, it's probably a scanned image wrapper, so fallback to OCR)
             if len(digital_text.strip()) > 50:
                 extracted_text = digital_text
-            else:
                 # FALLBACK: Convert scanned PDF to images and run OCR (slow)
-                images = convert_from_bytes(contents, poppler_path=r'C:\poppler\poppler-26.07.0\Library\bin')
+            else:
+                if os.name == "nt":
+                    images = convert_from_bytes(contents,poppler_path=r"C:\poppler\poppler-26.07.0\Library\bin")
+                else:
+                    images = convert_from_bytes(contents)
                 for img in images:
                     text = pytesseract.image_to_string(img)
                     extracted_text += text + "\n"
