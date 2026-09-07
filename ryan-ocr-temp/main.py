@@ -15,7 +15,10 @@ import uvicorn
 app = FastAPI(title="HealthHub OCR Service")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+    "http://localhost:5173",
+    "https://family-health-hub-eight.vercel.app",
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -131,4 +134,9 @@ async def extract_text(file: UploadFile = File(...)):
         )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000))
+    )
