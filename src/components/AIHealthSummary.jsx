@@ -19,7 +19,7 @@ export default function AIHealthSummary({
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/ai/health-overview",
+        `${import.meta.env.VITE_AI_API_URL}/api/ai/health-overview`,
         {
           method: "POST",
           headers: {

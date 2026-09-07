@@ -38,7 +38,7 @@ function AIChatbot() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/ai/chat",
+        `${import.meta.env.VITE_AI_API_URL}/api/ai/chat`
         {
           method: "POST",
           headers: {

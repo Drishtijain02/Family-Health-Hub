@@ -1,7 +1,7 @@
 import { getMedicalRecordSignedUrl } from './medicalRecords'
 
-const OCR_API_URL = 'http://localhost:8000'
-const AI_API_URL = 'http://localhost:5000'
+const OCR_API_URL = import.meta.env.VITE_OCR_API_URL
+const AI_API_URL = import.meta.env.VITE_AI_API_URL
 
 export async function analyzeMedicalReport(report) {
   if (!report?.file_url) {
