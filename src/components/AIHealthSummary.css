@@ -217,8 +217,15 @@
   }
 
   .ai-summary-generate-btn {
-    width: 100%;
-  }
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+  margin: 16px auto;
+  white-space: nowrap;
+  position: static;
+  transform: none;
+}
 
   .ai-summary-stats {
     grid-template-columns: 1fr;
