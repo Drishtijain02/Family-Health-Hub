@@ -37,18 +37,18 @@ function AIChatbot() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_AI_API_URL}/api/ai/chat`
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            message: userMessage,
-          }),
-        }
-      );
+  const response = await fetch(
+  `${import.meta.env.VITE_AI_API_URL}/api/ai/chat`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: userMessage,
+    }),
+  }
+);
 
       const data = await response.json();
 
