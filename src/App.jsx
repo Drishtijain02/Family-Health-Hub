@@ -12,7 +12,7 @@ import Timeline from "./components/Timeline/Timeline";
 import Reminders from "./Reminders/Reminders";
 import Prescriptions from "./components/Prescriptions";
 import HealthCard from "./components/HealthCard";
-
+import FitnessModule from "./components/FitnessModule";
 const avatarOptions = ["👨🏻", "👩🏻", "👦🏻", "👧🏻", "👴🏻", "👵🏻"];
 
 function getAvatarForRelation(relation) {
@@ -896,6 +896,16 @@ function DashboardApp() {
               >
                 🔔 Reminders
               </button>
+              <button
+  type="button"
+  className={`nav-item ${activeModule === "fitness" ? "active" : ""}`}
+  onClick={() => {
+    setActiveModule("fitness");
+    setShowProfile(false);
+  }}
+>
+  🏃 Fitness & Wellness
+</button>
 
               <button
                 type="button"
@@ -972,19 +982,21 @@ function DashboardApp() {
             <AIChatbot />
 
             {activeModule === "medical-records" ? (
-              <MedicalRecordsPage
-                selectedMember={selectedMember}
-                onRecordsChanged={() => refreshDashboardMedicalReports(selectedMember)}
-              />
-            ) : activeModule === "prescriptions" ? (
-              <Prescriptions selectedMember={selectedMember} />
-            ) : activeModule === "emergency-card" ? (
-              <HealthCard member={selectedMember} user={user} />
-            ) : activeModule === "timeline" ? (
-              <Timeline familyMemberId={selectedMember.id} />
-            ) : activeModule === "reminders" ? (
-              <Reminders familyMemberId={selectedMember.id} />
-            ) : (
+  <MedicalRecordsPage
+    selectedMember={selectedMember}
+    onRecordsChanged={() => refreshDashboardMedicalReports(selectedMember)}
+  />
+) : activeModule === "prescriptions" ? (
+  <Prescriptions selectedMember={selectedMember} />
+) : activeModule === "fitness" ? (
+  <FitnessModule selectedMember={selectedMember} />
+) : activeModule === "emergency-card" ? (
+  <HealthCard member={selectedMember} user={user} />
+) : activeModule === "timeline" ? (
+  <Timeline familyMemberId={selectedMember.id} />
+) : activeModule === "reminders" ? (
+  <Reminders familyMemberId={selectedMember.id} />
+) : (
               <>
                 <div className="dashboard-profile-header">
                   <div className="dashboard-person">
