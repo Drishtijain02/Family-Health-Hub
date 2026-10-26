@@ -34,23 +34,4 @@ AI-assisted healthcare features into one place.
 - `server/` — Backend/server-side functionality
 - `supabase/` — Supabase configuration and database-related files
 
-## Contributors & Module Contributions
-
-### Avinandan Kumar — Medical Records
-
-Implemented the Medical Records module, including:
-
-- Medical Records user interface
-- Medical report upload functionality
-- Supabase Storage and database integration
-- Record categorization and metadata handling
-- View/open and delete functionality
-- Upload status and error handling
-- Medical report analysis interface
-- Integration support for connecting medical records with the
-  OCR and AI analysis pipeline
-
-### Project Team
-
-Family Health Hub was developed collaboratively, with different team members
-responsible for different application modules and integrations.
+[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/drishtijain02/family-health-hub?utm_source=readme&utm_medium=badge)
